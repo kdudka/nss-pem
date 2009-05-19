@@ -93,7 +93,7 @@ make_key(const unsigned char *salt, const unsigned char *data, int len,
     MD5Context *Md5Ctx = MD5_NewContext();
     unsigned int digestLen;
     int count, i;
-    char H[25];
+    unsigned char H[25];
 
     nkey = 24;
     count = 0;
@@ -114,6 +114,7 @@ make_key(const unsigned char *salt, const unsigned char *data, int len,
         }
         count++;
     }
+    MD5_DestroyContext(Md5Ctx, PR_TRUE);
 
     return 24;
 }
@@ -323,7 +324,7 @@ pem_mdSession_Login
 
     arena = PORT_NewArena(2048);
     if (!arena) {
-        goto loser;
+        return CKR_HOST_MEMORY;
     }
 
     plog("pem_mdSession_Login '%s'\n", (char *) pin->data);
@@ -347,9 +348,17 @@ pem_mdSession_Login
     output =
         (unsigned char *) nss_ZAlloc(NULL,
                                      (io->u.key.key.privateKey->len + 1));
+    if (!output) {
+        rv = CKR_HOST_MEMORY;
+        goto loser;
+    }
 
     cx = DES_CreateContext((const unsigned char *) mykey, iv,
                            io->u.key.cipher, PR_FALSE);
+    if (!cx) {
+        rv = CKR_HOST_MEMORY;
+        goto loser;
+    }
 
     rv = DES_Decrypt(cx, output, &len, io->u.key.key.privateKey->len,
                      io->u.key.key.privateKey->data,
@@ -361,12 +370,14 @@ pem_mdSession_Login
         iv = NULL;
     }
     if (rv != SECSuccess) {
+        rv = CKR_PIN_INCORRECT;
         goto loser;
     }
 
     lpk = (NSSLOWKEYPrivateKey *) nss_ZAlloc(NULL,
                                              sizeof (NSSLOWKEYPrivateKey));
     if (lpk == NULL) {
+        rv = CKR_HOST_MEMORY;
         goto loser;
     }
 
@@ -391,7 +402,7 @@ pem_mdSession_Login
     if (rv != SECSuccess)
         goto loser;
 
-    return CKR_OK;
+    rv = CKR_OK;
 
   loser:
     if (arena)
@@ -400,7 +411,7 @@ pem_mdSession_Login
         free(iv);
     nss_ZFreeIf(output);
 
-    return CKR_PIN_INCORRECT;
+    return rv;
 }
 
 NSS_IMPLEMENT NSSCKMDSession *
