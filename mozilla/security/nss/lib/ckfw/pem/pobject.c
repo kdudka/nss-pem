@@ -987,10 +987,7 @@ pem_CreateObject
     char *ivstring = NULL;
 
     count = pem_nobjs;
-    if (count > 0)
-        size = ((count / PEM_ITEM_CHUNK) + 1) * PEM_ITEM_CHUNK;
-    else
-        size = 0;
+    size = (count / PEM_ITEM_CHUNK) * PEM_ITEM_CHUNK;
 
     /*
      * only create token objects
