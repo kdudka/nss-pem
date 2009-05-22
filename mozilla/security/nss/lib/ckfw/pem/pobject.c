@@ -160,7 +160,7 @@ static const NSSItem pem_falseItem = {
     (void *) &ck_false, (PRUint32) sizeof(CK_BBOOL)
 };
 static const NSSItem pem_x509Item = {
-    (void *) &ckc_x509, (PRUint32) sizeof(CKC_X_509)
+    (void *) &ckc_x509, (PRUint32) sizeof(CK_ULONG)
 };
 static const NSSItem pem_rsaItem = {
     (void *) &ckk_rsa, (PRUint32) sizeof(CK_KEY_TYPE)
