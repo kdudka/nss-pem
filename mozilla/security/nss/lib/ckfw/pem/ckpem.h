@@ -116,7 +116,6 @@ struct pemInternalObjectStr {
   CK_OBJECT_CLASS objClass;
   NSSItem         hashKey;
   NSSItem         id;
-  void            *idData;
   unsigned char   hashKeyData[128];
   SECItem         *derCert;
   char            *nickname;
@@ -224,6 +223,8 @@ PRBool pem_FreeParsedStrings(PRInt32 numStrings, char** instrings);
 pemInternalObject *
 CreateObject(CK_OBJECT_CLASS objClass, pemObjectType type, SECItem *certDER,
              SECItem *keyDER, char *filename, int objid, CK_SLOT_ID slotID);
+
+void pem_DestroyInternalObject (pemInternalObject *io);
 
 
 /* prsa.c */

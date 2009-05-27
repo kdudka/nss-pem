@@ -113,6 +113,7 @@ pem_DestroyPrivateKey(pemLOWKEYPrivateKey * privk)
     if (privk && privk->arena) {
         PORT_FreeArena(privk->arena, PR_TRUE);
     }
+    nss_ZFreeIf(privk);
 }
 
 void
@@ -124,11 +125,6 @@ pem_PopulateModulusExponent(pemInternalObject * io)
     PLArenaPool *arena;
     SECStatus rv;
 
-    arena = PORT_NewArena(2048);
-    if (!arena) {
-        return;
-    }
-
     /* make sure we have the right objects */
     if (((const NSSItem *) NULL == classItem) ||
         (sizeof(CK_OBJECT_CLASS) != classItem->size) ||
@@ -136,6 +132,11 @@ pem_PopulateModulusExponent(pemInternalObject * io)
         ((const NSSItem *) NULL == keyType) ||
         (sizeof(CK_KEY_TYPE) != keyType->size) ||
         (CKK_RSA != *(CK_KEY_TYPE *) keyType->data)) {
+        return;
+    }
+
+    arena = PORT_NewArena(2048);
+    if (!arena) {
         return;
     }
 
@@ -159,12 +160,14 @@ pem_PopulateModulusExponent(pemInternalObject * io)
         return;
     }
 
+    nss_ZFreeIf(io->u.key.key.modulus.data);
     io->u.key.key.modulus.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.modulus.len);
     io->u.key.key.modulus.size = lpk->u.rsa.modulus.len;
     nsslibc_memcpy(io->u.key.key.modulus.data, lpk->u.rsa.modulus.data,
                    lpk->u.rsa.modulus.len);
 
+    nss_ZFreeIf(io->u.key.key.exponent.data);
     io->u.key.key.exponent.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.publicExponent.len);
     io->u.key.key.exponent.size = lpk->u.rsa.publicExponent.len;
@@ -172,6 +175,7 @@ pem_PopulateModulusExponent(pemInternalObject * io)
                    lpk->u.rsa.publicExponent.data,
                    lpk->u.rsa.publicExponent.len);
 
+    nss_ZFreeIf(io->u.key.key.privateExponent.data);
     io->u.key.key.privateExponent.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.privateExponent.len);
     io->u.key.key.privateExponent.size = lpk->u.rsa.privateExponent.len;
@@ -179,30 +183,35 @@ pem_PopulateModulusExponent(pemInternalObject * io)
                    lpk->u.rsa.privateExponent.data,
                    lpk->u.rsa.privateExponent.len);
 
+    nss_ZFreeIf(io->u.key.key.prime1.data);
     io->u.key.key.prime1.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.prime1.len);
     io->u.key.key.prime1.size = lpk->u.rsa.prime1.len;
     nsslibc_memcpy(io->u.key.key.prime1.data, lpk->u.rsa.prime1.data,
                    lpk->u.rsa.prime1.len);
 
+    nss_ZFreeIf(io->u.key.key.prime2.data);
     io->u.key.key.prime2.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.prime2.len);
     io->u.key.key.prime2.size = lpk->u.rsa.prime2.len;
     nsslibc_memcpy(io->u.key.key.prime2.data, lpk->u.rsa.prime2.data,
                    lpk->u.rsa.prime2.len);
 
+    nss_ZFreeIf(io->u.key.key.exponent1.data);
     io->u.key.key.exponent1.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.exponent1.len);
     io->u.key.key.exponent1.size = lpk->u.rsa.exponent1.len;
     nsslibc_memcpy(io->u.key.key.exponent1.data, lpk->u.rsa.exponent1.data,
                    lpk->u.rsa.exponent1.len);
 
+    nss_ZFreeIf(io->u.key.key.exponent2.data);
     io->u.key.key.exponent2.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.exponent2.len);
     io->u.key.key.exponent2.size = lpk->u.rsa.exponent2.len;
     nsslibc_memcpy(io->u.key.key.exponent2.data, lpk->u.rsa.exponent2.data,
                    lpk->u.rsa.exponent2.len);
 
+    nss_ZFreeIf(io->u.key.key.coefficient.data);
     io->u.key.key.coefficient.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.coefficient.len);
     io->u.key.key.coefficient.size = lpk->u.rsa.coefficient.len;
@@ -271,6 +280,8 @@ pem_mdCryptoOperationRSAPriv_Create
     lpk->arena = arena;
     lpk->keyType = pemLOWKEYRSAKey;
     prepare_low_rsa_priv_key_for_asn1(lpk);
+
+    nss_ZFreeIf(iKey->u.key.key.modulus.data);
     iKey->u.key.key.modulus.data =
         (void *) nss_ZAlloc(NULL, lpk->u.rsa.modulus.len);
     iKey->u.key.key.modulus.size = lpk->u.rsa.modulus.len;

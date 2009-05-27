@@ -487,9 +487,21 @@ pem_Finalize
     NSSCKFWInstance * fwInstance
 )
 {
+    int i;
+
     plog("pem_Finalize\n");
     if (!pemInitialized)
         return;
+
+    for (i = 0; i < pem_nobjs; ++i)
+        pem_DestroyInternalObject(gobj[i]);
+
+    nss_ZFreeIf(gobj);
+    gobj = NULL;
+
+    pem_nobjs = 0;
+    size = 0;
+    count = 0;
 
     PR_AtomicSet(&pemInitialized, PR_FALSE);
 

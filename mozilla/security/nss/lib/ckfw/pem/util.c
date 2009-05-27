@@ -202,6 +202,8 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		    }
 		}
 		der = (SECItem *) malloc(sizeof(SECItem));
+                if (der == NULL)
+                    goto loser;
 
 		char *trailer = NULL;
 		asc = body;
@@ -221,10 +223,15 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		/* Convert to binary */
 		rv = ATOB_ConvertAsciiToItem(der, body);
 		if (rv) {
+                    free(der);
 		    goto loser;
 		}
-                if ((certsonly && !key) || (!certsonly && key))
+                if ((certsonly && !key) || (!certsonly && key)) {
 		    PUT_Object(der, error);
+                } else {
+                    free(der->data);
+                    free(der);
+                }
 	    }			/* while */
 	} else {		/* No headers and footers, translate the blob */
 	    der = nss_ZNEW(NULL, SECItem);

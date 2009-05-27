@@ -572,34 +572,43 @@ pem_DestroyInternalObject
         nss_ZFreeIf(io->u.cert.labelData);
         nss_ZFreeIf(io->u.cert.key.privateKey);
         nss_ZFreeIf(io->u.cert.key.pubKey);
-        nss_ZFreeIf(io->idData);
+        /* go through */
+    case pemTrust:
+        nss_ZFreeIf(io->id.data);
         nss_ZFreeIf(io->nickname);
+        nss_ZFreeIf(io->derCert->data);
         nss_ZFreeIf(io->derCert);
         if (io->u.cert.subject.size > 0) {
-            PR_Free(io->u.cert.subject.data);
+            nss_ZFreeIf(io->u.cert.subject.data);
         }
         if (io->u.cert.issuer.size > 0) {
-            PR_Free(io->u.cert.issuer.data);
+            nss_ZFreeIf(io->u.cert.issuer.data);
         }
         if (io->u.cert.serial.size > 0) {
-            PR_Free(io->u.cert.serial.data);
+            nss_ZFreeIf(io->u.cert.serial.data);
         }
         break;
     case pemBareKey:
+        nss_ZFreeIf(io->u.key.key.coefficient.data);
+        nss_ZFreeIf(io->u.key.key.exponent2.data);
+        nss_ZFreeIf(io->u.key.key.exponent1.data);
+        nss_ZFreeIf(io->u.key.key.prime2.data);
+        nss_ZFreeIf(io->u.key.key.prime1.data);
+        nss_ZFreeIf(io->u.key.key.privateExponent.data);
+        nss_ZFreeIf(io->u.key.key.exponent.data);
+        nss_ZFreeIf(io->u.key.key.modulus.data);
+        nss_ZFreeIf(io->u.key.key.privateKey->data);
         nss_ZFreeIf(io->u.key.key.privateKey);
         nss_ZFreeIf(io->u.key.key.pubKey);
-        nss_ZFreeIf(io->idData);
+        nss_ZFreeIf(io->id.data);
         nss_ZFreeIf(io->nickname);
+        nss_ZFreeIf(io->derCert->data);
         nss_ZFreeIf(io->derCert);
 
         /* strdup'd in ReadDERFromFile */
         if (io->u.key.ivstring)
             free(io->u.key.ivstring);
         break;
-    case pemTrust:
-        nss_ZFreeIf(io->idData);
-        nss_ZFreeIf(io->nickname);
-        nss_ZFreeIf(io->derCert);
     }
     nss_ZFreeIf(io);
     return;
