@@ -343,7 +343,7 @@ pem_mdSession_Login
     iv = convert_iv(io->u.key.ivstring, 8);
 
     /* Convert the PIN and IV into a DES key */
-    make_key(iv, pin->data, 8, mykey);
+    make_key(iv, pin->data, pin->size, mykey);
 
     output =
         (unsigned char *) nss_ZAlloc(NULL,
