@@ -415,14 +415,11 @@ pem_Initialize
 
     CK_C_INITIALIZE_ARGS_PTR modArgs =
         NSSCKFWInstance_GetInitArgs(fwInstance);
-    if (!modArgs) {
+    if (!modArgs || !modArgs->LibraryParameters) {
         goto done;
     }
-    if (modArgs->LibraryParameters) {
-        modparms = (unsigned char *) modArgs->LibraryParameters;
-    }
-    if (modparms)
-        plog("Initialized with %s\n", modparms);
+    modparms = (unsigned char *) modArgs->LibraryParameters;
+    plog("Initialized with %s\n", modparms);
 
     /*
      * The initialization string format is a space-delimited file of
