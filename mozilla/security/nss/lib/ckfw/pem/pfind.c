@@ -267,232 +267,63 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     PRUint32 i;
     PRUint32 count = 0;
     PRUint32 size = 0;
-    CK_OBJECT_CLASS objClass;
+    pemObjectType type = pemRaw;
+    CK_OBJECT_CLASS objClass = pem_GetObjectClass(pTemplate, ulAttributeCount);
+
+    *pError = CKR_OK;
 
     plog("collect_objects slot #%ld, ", slotID);
     plog("%d attributes, ", ulAttributeCount);
     plog("%d objects to look through.\n", pem_nobjs);
     plog("Looking for: ");
     /*
-     * now handle the various object types
+     * now determine type of the object
      */
-    objClass = pem_GetObjectClass(pTemplate, ulAttributeCount);
-    *pError = CKR_OK;
     switch (objClass) {
     case CKO_CERTIFICATE:
         plog("CKO_CERTIFICATE\n");
-        for (i = 0; i < pem_nobjs; i++) {
-            plog("  %d type = %d\n", i, gobj[i]->type);
-            if (gobj[i]->type != pemCert)
-                continue;
-            if ((slotID == gobj[i]->slotID)
-                && (CK_TRUE ==
-                    pem_match(pTemplate, ulAttributeCount, gobj[i]))) {
-
-                pemInternalObject *o = NULL;
-
-                o = nss_ZNEW(NULL, pemInternalObject);
-                if ((pemInternalObject *) NULL == o) {
-                    *pError = CKR_HOST_MEMORY;
-                    goto loser;
-                }
-                memset(&o->u.cert, 0, sizeof(o->u.cert));
-                o->objClass = objClass;
-                o->type = pemCert;
-                o->derCert = nss_ZNEW(NULL, SECItem);
-                o->derCert->data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
-                o->derCert->len = gobj[i]->derCert->len;
-                nsslibc_memcpy(o->derCert->data, gobj[i]->derCert->data,
-                               gobj[i]->derCert->len);
-
-                o->u.cert.subject.data =
-                    (void *) nss_ZAlloc(NULL,
-                                        gobj[i]->u.cert.subject.size);
-                o->u.cert.subject.size = gobj[i]->u.cert.subject.size;
-                nsslibc_memcpy(o->u.cert.subject.data,
-                               gobj[i]->u.cert.subject.data,
-                               gobj[i]->u.cert.subject.size);
-
-                o->u.cert.issuer.data =
-                    (void *) nss_ZAlloc(NULL,
-                                        gobj[i]->u.cert.issuer.size);
-                o->u.cert.issuer.size = gobj[i]->u.cert.issuer.size;
-                nsslibc_memcpy(o->u.cert.issuer.data,
-                               gobj[i]->u.cert.issuer.data,
-                               gobj[i]->u.cert.issuer.size);
-
-                o->u.cert.serial.data =
-                    (void *) nss_ZAlloc(NULL,
-                                        gobj[i]->u.cert.serial.size);
-                o->u.cert.serial.size = gobj[i]->u.cert.serial.size;
-                nsslibc_memcpy(o->u.cert.serial.data,
-                               gobj[i]->u.cert.serial.data,
-                               gobj[i]->u.cert.serial.size);
-
-                o->nickname =
-                    (char *) nss_ZAlloc(NULL,
-                                        strlen(gobj[i]->nickname) + 1);
-                strcpy(o->nickname, gobj[i]->nickname);
-                o->id.data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->id.size);
-                (void) nsslibc_memcpy(o->id.data, gobj[i]->id.data,
-                                      gobj[i]->id.size);
-                o->id.size = gobj[i]->id.size;
-                PUT_Object(o, *pError);
-            } /* match */
-        } /* for */
+        type = pemCert;
         break;
     case CKO_PUBLIC_KEY:
-#if 0
-        for (i = 0; i < pem_nobjs; i++) {
-            if (gobj[i]->type != pemBareKey)
-                continue;
-            if (CK_TRUE == pem_match(pTemplate, ulAttributeCount, gobj[i])) {
-                pemInternalObject *o;
-
-                o = nss_ZNEW(NULL, pemInternalObject);
-                if ((pemInternalObject *) NULL == o) {
-                    *pError = CKR_HOST_MEMORY;
-                    goto loser;
-                }
-                memset(&o->u.key, 0, sizeof(o->u.key));
-                o->objClass = objClass;
-                o->type = pemBareKey;
-                o->derCert = nss_ZNEW(NULL, SECItem);
-                o->derCert->data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
-                o->derCert->len = gobj[i]->derCert->len;
-                o->id.data =
-                    (void *) nss_ZAlloc(NULL,
-                                        sizeof(gobj[i]->id.data));
-                o->id.data = gobj[i]->id.data;
-                o->id.size = gobj[i]->id.size;
-                nsslibc_memcpy(o->derCert->data, gobj[i]->derCert->data,
-                               gobj[i]->derCert->len);
-                o->nickname =
-                    (char *) nss_ZAlloc(NULL,
-                                        strlen(gobj[i]->nickname) + 1);
-                strcpy(o->nickname, gobj[i]->nickname);
-                o->u.key.key.privateKey = nss_ZNEW(NULL, SECItem);
-                o->u.key.key.privateKey->data =
-                    (void *) nss_ZAlloc(NULL,
-                                        gobj[i]->u.key.key.privateKey->
-                                        len);
-                o->u.key.key.privateKey->len =
-                    gobj[i]->u.key.key.privateKey->len;
-                nsslibc_memcpy(o->u.key.key.privateKey->data,
-                               gobj[i]->u.key.key.privateKey->data,
-                               gobj[i]->u.key.key.privateKey->len);
-
-                PUT_Object(o, *pError);
-            }                   // match
-        }                       // for
-        goto done;
+        plog("CKO_PUBLIC_KEY\n");
+        type = pemBareKey;
         break;
-#endif
     case CKO_PRIVATE_KEY:
+        type = pemBareKey;
         plog("CKO_PRIVATE_KEY\n");
-        for (i = 0; i < pem_nobjs; i++) {
-            if (gobj[i]->type != pemBareKey)
-                continue;
-            if ((slotID == gobj[i]->slotID)
-                && (CK_TRUE ==
-                    pem_match(pTemplate, ulAttributeCount, gobj[i]))) {
-                pemInternalObject *o;
-
-                o = nss_ZNEW(NULL, pemInternalObject);
-                if ((pemInternalObject *) NULL == o) {
-                    *pError = CKR_HOST_MEMORY;
-                    goto loser;
-                }
-                memset(&o->u.key, 0, sizeof(o->u.key));
-                o->objClass = objClass;
-                o->type = pemBareKey;
-                o->derCert = nss_ZNEW(NULL, SECItem);
-                o->derCert->data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
-                o->derCert->len = gobj[i]->derCert->len;
-                o->id.data =
-                (void *) nss_ZAlloc(NULL, gobj[i]->id.size);
-                (void) nsslibc_memcpy(o->id.data, gobj[i]->id.data,
-                                      gobj[i]->id.size);
-                o->id.size = gobj[i]->id.size;
-                nsslibc_memcpy(o->derCert->data, gobj[i]->derCert->data,
-                               gobj[i]->derCert->len);
-                o->nickname =
-                    (char *) nss_ZAlloc(NULL,
-                                        strlen(gobj[i]->nickname) + 1);
-                strcpy(o->nickname, gobj[i]->nickname);
-                o->u.key.key.privateKey = nss_ZNEW(NULL, SECItem);
-                o->u.key.key.privateKey->data =
-                (void *) nss_ZAlloc(NULL,
-                                        gobj[i]->u.key.key.privateKey->
-                                        len);
-                o->u.key.key.privateKey->len =
-                    gobj[i]->u.key.key.privateKey->len;
-                nsslibc_memcpy(o->u.key.key.privateKey->data,
-                               gobj[i]->u.key.key.privateKey->data,
-                               gobj[i]->u.key.key.privateKey->len);
-
-                PUT_Object(o, *pError);
-            } /* match */
-        } /* for */
-        goto done;
         break;
     case CKO_NETSCAPE_TRUST:
+        type = pemTrust;
         plog("CKO_NETSCAPE_TRUST\n");
-        for (i = 0; i < pem_nobjs; i++) {
-            if (gobj[i]->type != pemTrust)
-                continue;
-            if ((slotID == gobj[i]->slotID)
-                && (CK_TRUE ==
-                    pem_match(pTemplate, ulAttributeCount, gobj[i]))) {
-                pemInternalObject *o;
-
-                o = nss_ZNEW(NULL, pemInternalObject);
-                if ((pemInternalObject *) NULL == o) {
-                    *pError = CKR_HOST_MEMORY;
-                    goto loser;
-                }
-                memset(&o->u.trust, 0, sizeof(o->u.trust));
-                o->objClass = objClass;
-                o->type = pemTrust;
-                o->derCert = nss_ZNEW(NULL, SECItem);
-                o->derCert->data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
-                o->derCert->len = gobj[i]->derCert->len;
-                nsslibc_memcpy(o->derCert->data, gobj[i]->derCert->data,
-                               gobj[i]->derCert->len);
-                o->nickname =
-                    (char *) nss_ZAlloc(NULL,
-                                        strlen(gobj[i]->nickname) + 1);
-                strcpy(o->nickname, gobj[i]->nickname);
-                o->id.data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->id.size);
-                (void) nsslibc_memcpy(o->id.data, gobj[i]->id.data,
-                                      gobj[i]->id.size);
-                o->id.size = gobj[i]->id.size;
-
-                PUT_Object(o, *pError);
-            } /* match */
-        } /* for */
-        goto done;
+        break;
     case CKO_NETSCAPE_CRL:
         plog("CKO_NETSCAPE_CRL\n");
-        break;
+        goto done;
     case CKO_NETSCAPE_SMIME:
         plog("CKO_NETSCAPE_SMIME\n");
-        break;
+        goto done;
     case CKO_NETSCAPE_BUILTIN_ROOT_LIST:
         plog("CKO_NETSCAPE_BUILTIN_ROOT_LIST\n");
-        break;
+        goto done;
     case CK_INVALID_HANDLE:
         plog("CK_INVALID_HANDLE\n");
-        break;
+        goto done;
     default:
         plog("no other object types %08x\n", objClass);
         goto done; /* no other object types we understand in this module */
+    }
+
+    /* find object */
+    for (i = 0; i < pem_nobjs; i++) {
+        plog("  %d type = %d\n", i, gobj[i]->type);
+        if ((type == gobj[i]->type)
+            && (slotID == gobj[i]->slotID)
+            && (CK_TRUE ==
+                pem_match(pTemplate, ulAttributeCount, gobj[i]))) {
+
+            pemInternalObject *o = gobj[i];
+            PUT_Object(o, *pError);
+        }
     }
 
     if (CKR_OK != *pError) {
