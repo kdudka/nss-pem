@@ -138,7 +138,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     SECStatus rv;
     PRFileDesc *inFile;
     int count = 0, size = 0;
-    SECItem *der;
+    SECItem *der = NULL;
     int error;
     SECItem filedata;
     char *c, *iv;

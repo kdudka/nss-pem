@@ -166,7 +166,7 @@ pem_mdSession_CopyObject
     NSSCKFWToken * fwToken,
     NSSCKMDInstance * mdInstance,
     NSSCKFWInstance * fwInstance,
-    NSSCKFWObject * mdOldObject,
+    NSSCKMDObject * mdOldObject,
     NSSCKFWObject * fwOldObject,
     NSSArena * arena,
     CK_ATTRIBUTE_PTR pTemplate,
@@ -174,8 +174,7 @@ pem_mdSession_CopyObject
     CK_RV * pError
 )
 {
-    CK_OBJECT_CLASS objClass;
-    pemInternalObject *new;
+    pemInternalObject *new = NULL;
     NSSCKMDObject *mdObject = nssCKFWObject_GetMDObject(fwOldObject);
     pemInternalObject *old = (pemInternalObject *) mdObject->etc;
     CK_RV error = CKR_OK;
@@ -195,7 +194,7 @@ pem_mdSession_CopyObject
                 goto loser;
             }
             memset(&new->u.cert, 0, sizeof(new->u.cert));
-            new->objClass = objClass;
+            new->objClass = CKO_CERTIFICATE;
             new->type = pemCert;
             new->derCert = nss_ZNEW(NULL, SECItem);
             new->derCert->data =
@@ -256,7 +255,7 @@ pem_mdSession_CopyObject
                 goto loser;
             }
             memset(&new->u.trust, 0, sizeof(new->u.trust));
-            new->objClass = objClass;
+            new->objClass = CKO_CERTIFICATE;
             new->type = pemTrust;
             new->derCert = nss_ZNEW(NULL, SECItem);
             new->derCert->data =
@@ -308,10 +307,10 @@ pem_mdSession_Login
 {
     NSSCKFWSlot *fwSlot;
     CK_SLOT_ID slotID;
-    pemInternalObject *io;
-    unsigned char *iv;
+    pemInternalObject *io = NULL;
+    unsigned char *iv = 0;
     unsigned char mykey[32];
-    unsigned char *output;
+    unsigned char *output = NULL;
     DESContext *cx = NULL;
     SECStatus rv;
     unsigned int len = 0;

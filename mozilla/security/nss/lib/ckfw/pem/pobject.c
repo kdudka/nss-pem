@@ -915,7 +915,7 @@ pem_mdObject_GetObjectSize
     CK_RV * pError
 )
 {
-    pemInternalObject *io = (pemInternalObject *) mdObject->etc;
+    /* pemInternalObject *io = (pemInternalObject *) mdObject->etc; */
     CK_ULONG rv = 1;
 
     /* size is irrelevant to this token */
@@ -980,7 +980,8 @@ pem_CreateObject
     CK_BBOOL cacert;
     char *filename;
     SECItem **derlist = NULL;
-    int nobjs, i;
+    int nobjs = 0;
+    int i;
     int objid, count, size;
     pemToken *token;
     int cipher;

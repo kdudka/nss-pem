@@ -517,7 +517,7 @@ pem_FindObjectsInit
     CK_RV * pError
 )
 {
-    NSSArena *arena;
+    NSSArena *arena = NULL;
     NSSCKMDFindObjects *rv = (NSSCKMDFindObjects *) NULL;
     struct pemFOStr *fo = (struct pemFOStr *) NULL;
     pemInternalObject **temp = (pemInternalObject **) NULL;

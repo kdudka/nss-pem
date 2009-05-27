@@ -138,7 +138,6 @@ pem_NewSlot
 {
     NSSArena *arena;
     NSSCKMDSlot *mdSlot;
-    pemToken *token = NULL;
 
     plog("pem_NewSlot\n");
     arena = NSSCKFWInstance_GetArena(fwInstance, pError);
@@ -154,9 +153,8 @@ pem_NewSlot
         return (NSSCKMDSlot *) NULL;
     }
 
-    token = pem_NewToken(fwInstance, pError);
+    mdSlot->etc = pem_NewToken(fwInstance, pError);
 
-    mdSlot->etc = token;
     mdSlot->GetSlotDescription = pem_mdSlot_GetSlotDescription;
     mdSlot->GetManufacturerID = pem_mdSlot_GetManufacturerID;
     mdSlot->GetHardwareVersion = pem_mdSlot_GetHardwareVersion;

@@ -303,7 +303,7 @@ pem_mdCryptoOperationRSAPriv_Create
     return &iOperation->mdOperation;
 }
 
-static CK_RV
+static void
 pem_mdCryptoOperationRSAPriv_Destroy
 (
     NSSCKMDCryptoOperation * mdOperation,
@@ -319,7 +319,6 @@ pem_mdCryptoOperationRSAPriv_Destroy
         nssItem_Destroy(iOperation->buffer);
     }
     nss_ZFreeIf(iOperation);
-    return CKR_OK;
 }
 
 static CK_ULONG
