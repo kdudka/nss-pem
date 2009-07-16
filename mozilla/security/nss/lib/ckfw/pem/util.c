@@ -168,9 +168,13 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
                     key = 1;
 		    c = body;
 		    body = strchr(body, '\n');
+		    if (NULL == body)
+			goto loser;
 		    body++;
 		    if (strncmp(body, "Proc-Type: 4,ENCRYPTED", 22) == 0) {
 			body = strchr(body, '\n');
+			if (NULL == body)
+			    goto loser;
 			body++;
 			if (strncmp(body, "DEK-Info: ", 10) == 0) {
 			    body += 10;
