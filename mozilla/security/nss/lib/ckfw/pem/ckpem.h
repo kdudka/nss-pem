@@ -101,6 +101,17 @@ typedef enum {
   pemTrust
 } pemObjectType;
 
+typedef struct pemInternalObjectStr pemInternalObject;
+typedef struct pemObjectListItemStr pemObjectListItem;
+
+/*
+ * singly-linked list of internal objects
+ */
+struct pemObjectListItemStr {
+  pemInternalObject     *io;
+  pemObjectListItem     *next;
+};
+
 /*
  * all the various types of objects are abstracted away in cobject and
  * cfind as pemInternalObjects.
@@ -121,8 +132,16 @@ struct pemInternalObjectStr {
   char            *nickname;
   NSSCKMDObject   mdObject;
   CK_SLOT_ID      slotID;
+  CK_ULONG        gobjIndex;
+  int             refCount;
+
+  /* used by pem_mdFindObjects_Next */
+  CK_BBOOL        extRef;
+
+  /* If list != NULL, the object contains no useful data except of the list
+   * of slave objects */
+  pemObjectListItem *list;
 };
-typedef struct pemInternalObjectStr pemInternalObject;
 
 struct pemTokenStr {
   PRBool          logged_in;
@@ -221,8 +240,9 @@ PRBool pem_ParseString(const char* inputstring, const char delimiter,
 PRBool pem_FreeParsedStrings(PRInt32 numStrings, char** instrings);
 
 pemInternalObject *
-CreateObject(CK_OBJECT_CLASS objClass, pemObjectType type, SECItem *certDER,
-             SECItem *keyDER, char *filename, int objid, CK_SLOT_ID slotID);
+AddObjectIfNeeded(CK_OBJECT_CLASS objClass, pemObjectType type,
+                  SECItem *certDER, SECItem *keyDER, char *filename, int objid,
+                  CK_SLOT_ID slotID);
 
 void pem_DestroyInternalObject (pemInternalObject *io);
 

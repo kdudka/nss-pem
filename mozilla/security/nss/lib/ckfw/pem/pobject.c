@@ -51,24 +51,12 @@ NSS_EXTERN_DATA pemInternalObject **gobj;
 NSS_EXTERN_DATA int pem_nobjs;
 NSS_EXTERN_DATA int token_needsLogin[NUM_SLOTS];
 
-#define PEM_ITEM_CHUNK  512
-#define PUT_Object(obj,err) \
-  { \
-    if (count >= size) { \
-    gobj = gobj ? \
-                nss_ZREALLOCARRAY(gobj, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) : \
-                nss_ZNEWARRAY(NULL, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) ; \
-      if ((pemInternalObject **)NULL == gobj) { \
-        err = CKR_HOST_MEMORY; \
-        goto loser; \
-      } \
-      size += PEM_ITEM_CHUNK; \
-    } \
-    (gobj)[ count ] = (obj); \
-    count++; \
-  }
+#define APPEND_LIST_ITEM(item) do { \
+    item->next = nss_ZNEW(NULL, pemObjectListItem); \
+    if (NULL == item->next) \
+      goto loser; \
+    item = item->next; \
+} while (0)
 
 const CK_ATTRIBUTE_TYPE certAttrs[] = {
     CKA_CLASS,
@@ -559,12 +547,41 @@ pem_FetchAttribute
     return NULL;
 }
 
+/*
+ * Destroy internal object or list object if refCount becomes zero (after
+ * decrement). Safe to call with NULL argument.
+ */
 void
 pem_DestroyInternalObject
 (
     pemInternalObject * io
 )
 {
+    if (NULL == io)
+        /* nothing to destroy */
+        return;
+
+    if (NULL != io->list) {
+        /* destroy list object */
+        pemObjectListItem *item = io->list;
+        while (item) {
+            pemObjectListItem *next = item->next;
+
+            /* recursion of maximal depth 1 */
+            pem_DestroyInternalObject(item->io);
+
+            nss_ZFreeIf(item);
+            item = next;
+        }
+        nss_ZFreeIf(io);
+        return;
+    }
+
+    io->refCount --;
+    if (0 < io->refCount)
+        return;
+
+    /* destroy internal object */
     switch (io->type) {
     case pemRaw:
         return;
@@ -610,12 +627,17 @@ pem_DestroyInternalObject
             free(io->u.key.ivstring);
         break;
     }
+
+    if (NULL != gobj)
+        /* remove reference to self from the global array */
+        gobj[io->gobjIndex] = NULL;
+
     nss_ZFreeIf(io);
     return;
 }
 
 /*
- * Finalize - unneeded
+ * Finalize - needed
  * Destroy - CKR_SESSION_READ_ONLY
  * IsTokenObject - CK_TRUE
  * GetAttributeCount
@@ -623,8 +645,24 @@ pem_DestroyInternalObject
  * GetAttributeSize
  * GetAttribute
  * SetAttribute - unneeded
- * GetObjectSize
+ * GetObjectSize - unneeded
  */
+
+static void
+pem_mdObject_Finalize
+(
+    NSSCKMDObject * mdObject,
+    NSSCKFWObject * fwObject,
+    NSSCKMDSession * mdSession,
+    NSSCKFWSession * fwSession,
+    NSSCKMDToken * mdToken,
+    NSSCKFWToken * fwToken,
+    NSSCKMDInstance * mdInstance,
+    NSSCKFWInstance * fwInstance
+)
+{
+    pem_DestroyInternalObject((pemInternalObject *) mdObject->etc);
+}
 
 static CK_RV
 pem_mdObject_Destroy
@@ -677,6 +715,14 @@ pem_mdObject_GetAttributeCount
 {
     pemInternalObject *io = (pemInternalObject *) mdObject->etc;
 
+    if (NULL != io->list) {
+        /* list object --> use the first item in the list */
+        NSSCKMDObject *md = &(io->list->io->mdObject);
+        return md->GetAttributeCount(md, fwObject, mdSession, fwSession,
+                                     mdToken, fwToken, mdInstance, fwInstance,
+                                     pError);
+    }
+
     if (pemRaw == io->type) {
         return io->u.raw.n;
     }
@@ -714,10 +760,19 @@ pem_mdObject_GetAttributeTypes
     CK_ULONG i;
     CK_RV error = CKR_OK;
     const CK_ATTRIBUTE_TYPE *attrs = NULL;
-    CK_ULONG size =
-        pem_mdObject_GetAttributeCount(mdObject, fwObject, mdSession,
-                                       fwSession, mdToken, fwToken, mdInstance,
-                                       fwInstance, &error);
+    CK_ULONG size;
+
+    if (NULL != io->list) {
+        /* list object --> use the first item in the list */
+        NSSCKMDObject *md = &(io->list->io->mdObject);
+        return md->GetAttributeTypes(md, fwObject, mdSession, fwSession,
+                                     mdToken, fwToken, mdInstance, fwInstance,
+                                     typeArray, ulCount);
+    }
+
+    size = pem_mdObject_GetAttributeCount(mdObject, fwObject, mdSession,
+                                          fwSession, mdToken, fwToken, mdInstance,
+                                          fwInstance, &error);
 
     if (size != ulCount) {
         return CKR_BUFFER_TOO_SMALL;
@@ -762,8 +817,15 @@ pem_mdObject_GetAttributeSize
 )
 {
     pemInternalObject *io = (pemInternalObject *) mdObject->etc;
-
     const NSSItem *b;
+
+    if (NULL != io->list) {
+        /* list object --> use the first item in the list */
+        NSSCKMDObject *md = &(io->list->io->mdObject);
+        return md->GetAttributeSize(md, fwObject, mdSession, fwSession,
+                                    mdToken, fwToken, mdInstance, fwInstance,
+                                    attribute, pError);
+    }
 
     b = pem_FetchAttribute(io, attribute);
 
@@ -791,6 +853,14 @@ pem_mdObject_GetAttribute
 {
     NSSCKFWItem mdItem;
     pemInternalObject *io = (pemInternalObject *) mdObject->etc;
+
+    if (NULL != io->list) {
+        /* list object --> use the first item in the list */
+        NSSCKMDObject *md = &(io->list->io->mdObject);
+        return md->GetAttribute(md, fwObject, mdSession, fwSession,
+                                mdToken, fwToken, mdInstance, fwInstance,
+                                attribute, pError);
+    }
 
     mdItem.needsFreeing = PR_FALSE;
     mdItem.item = (NSSItem *) pem_FetchAttribute(io, attribute);
@@ -910,31 +980,10 @@ pem_GetStringAttribute
     return str;
 }
 
-static CK_ULONG
-pem_mdObject_GetObjectSize
-(
-    NSSCKMDObject * mdObject,
-    NSSCKFWObject * fwObject,
-    NSSCKMDSession * mdSession,
-    NSSCKFWSession * fwSession,
-    NSSCKMDToken * mdToken,
-    NSSCKFWToken * fwToken,
-    NSSCKMDInstance * mdInstance,
-    NSSCKFWInstance * fwInstance,
-    CK_RV * pError
-)
-{
-    /* pemInternalObject *io = (pemInternalObject *) mdObject->etc; */
-    CK_ULONG rv = 1;
-
-    /* size is irrelevant to this token */
-    return rv;
-}
-
 static const NSSCKMDObject
 pem_prototype_mdObject = {
     (void *) NULL,              /* etc */
-    NULL,                       /* Finalize */
+    pem_mdObject_Finalize,
     pem_mdObject_Destroy,
     pem_mdObject_IsTokenObject,
     pem_mdObject_GetAttributeCount,
@@ -943,7 +992,7 @@ pem_prototype_mdObject = {
     pem_mdObject_GetAttribute,
     NULL,                       /* FreeAttribute */
     NULL,                       /* SetAttribute */
-    pem_mdObject_GetObjectSize,
+    NULL,                       /* GetObjectSize */
     (void *) NULL               /* null terminator */
 };
 
@@ -982,7 +1031,6 @@ pem_CreateObject
 )
 {
     CK_OBJECT_CLASS objClass;
-    pemInternalObject *io = NULL;
     CK_BBOOL isToken;
     NSSCKFWSlot *fwSlot;
     CK_SLOT_ID slotID;
@@ -991,13 +1039,12 @@ pem_CreateObject
     SECItem **derlist = NULL;
     int nobjs = 0;
     int i;
-    int objid, count, size;
+    int objid;
     pemToken *token;
     int cipher;
     char *ivstring = NULL;
-
-    count = pem_nobjs;
-    size = (count / PEM_ITEM_CHUNK) * PEM_ITEM_CHUNK;
+    pemInternalObject *listObj = NULL;
+    pemObjectListItem *listItem = NULL;
 
     /*
      * only create token objects
@@ -1048,6 +1095,20 @@ pem_CreateObject
                          * private key creation */
     }
 #endif
+
+    listObj = nss_ZNEW(NULL, pemInternalObject);
+    if (NULL == listObj) {
+        nss_ZFreeIf(filename);
+        return NULL;
+    }
+
+    listItem = listObj->list = nss_ZNEW(NULL, pemObjectListItem);
+    if (NULL == listItem) {
+        nss_ZFreeIf(listObj);
+        nss_ZFreeIf(filename);
+        return NULL;
+    }
+
     if (objClass == CKO_CERTIFICATE) {
         int i;
 
@@ -1058,6 +1119,9 @@ pem_CreateObject
         objid = -1;
         /* Brute force: find the id of the key, if any, in this slot */
         for (i = 0; i < pem_nobjs; i++) {
+            if (NULL == gobj[i])
+                continue;
+
             if ((slotID == gobj[i]->slotID)
                 && (gobj[i]->type == pemBareKey)) {
                 objid = atoi(gobj[i]->id.data);
@@ -1078,33 +1142,28 @@ pem_CreateObject
 
                 snprintf(nickname, 1024, "%s - %d", filename, c);
 
-                io = (pemInternalObject *) CreateObject(CKO_CERTIFICATE,
-                                                        pemCert, derlist[c],
-                                                        NULL, nickname, 0,
-                                                        slotID);
-                if (io == NULL)
+                if (c)
+                    APPEND_LIST_ITEM(listItem);
+                listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
+                                                 derlist[c], NULL, nickname, 0,
+                                                 slotID);
+                if (listItem->io == NULL)
                     goto loser;
-                PUT_Object(io, *pError);
-                pem_nobjs++;
 
                 /* Add the trust object */
-                io = CreateObject(CKO_NETSCAPE_TRUST, pemTrust, derlist[c],
-                                  NULL, nickname, 0, slotID);
-                if (io == NULL)
+                APPEND_LIST_ITEM(listItem);
+                listItem->io = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust,
+                                                 derlist[c], NULL, nickname, 0,
+                                                 slotID);
+                if (listItem->io == NULL)
                     goto loser;
-
-                PUT_Object(io, *pError);
-                pem_nobjs++;
             }
         } else {
-            io = (pemInternalObject *) CreateObject(CKO_CERTIFICATE,
-                                                    pemCert, derlist[0],
-                                                    NULL, filename, objid,
-                                                    slotID);
-            if (io == NULL)
+            listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
+                                             derlist[0], NULL, filename, objid,
+                                             slotID);
+            if (listItem->io == NULL)
                 goto loser;
-            PUT_Object(io, *pError);
-            pem_nobjs++;
         }
     } else if (objClass == CKO_PRIVATE_KEY) {
         /* Brute force: find the id of the certificate, if any, in this slot */
@@ -1120,6 +1179,9 @@ pem_CreateObject
 
         objid = -1;
         for (i = 0; i < pem_nobjs; i++) {
+            if (NULL == gobj[i])
+                continue;
+
             if ((slotID == gobj[i]->slotID) && (gobj[i]->type == pemCert)) {
                 objid = atoi(gobj[i]->id.data);
                 certDER.data =
@@ -1134,22 +1196,21 @@ pem_CreateObject
         if (objid == -1)
             objid = pem_nobjs + 1;
 
-        io = (pemInternalObject *) CreateObject(CKO_PRIVATE_KEY,
-                                                pemBareKey, &certDER,
-                                                derlist[0], filename,
-                                                objid, slotID);
-        if (io == NULL)
+        listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
+                                          derlist[0], filename, objid, slotID);
+        if (listItem->io == NULL)
             goto loser;
-        io->u.key.ivstring = ivstring;
-        io->u.key.cipher = cipher;
-        PUT_Object(io, *pError);
-        pem_nobjs++;
+
+        listItem->io->u.key.ivstring = ivstring;
+        listItem->io->u.key.cipher = cipher;
         nss_ZFreeIf(certDER.data);
 
         /* If the key was encrypted then free the session to make it appear that
          * the token was removed so we can force a login.
          */
         if (cipher) {
+            /* FIXME: Why 1.0s? Is it enough? Isn't it too much?
+             * What about e.g. 3.14s? */
             PRIntervalTime onesec = PR_SecondsToInterval(1);
             token_needsLogin[slotID - 1] = PR_TRUE;
 
@@ -1175,8 +1236,8 @@ pem_CreateObject
     }
     nss_ZFreeIf(filename);
     nss_ZFreeIf(derlist);
-    if ((pemInternalObject *) NULL == io) {
+    if ((pemInternalObject *) NULL == listItem->io) {
         return (NSSCKMDObject *) NULL;
     }
-    return pem_CreateMDObject(NULL, io, pError);
+    return pem_CreateMDObject(NULL, listObj, pError);
 }

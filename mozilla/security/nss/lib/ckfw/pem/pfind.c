@@ -131,6 +131,13 @@ pem_mdFindObjects_Next
 
     plog("Creating object for type %d\n", io->type);
 
+    if (!io->extRef) {
+        /* increase reference count only once as ckfw will free the found
+         * object only once */
+        io->extRef = CK_TRUE;
+        io->refCount ++;
+    }
+
     return pem_CreateMDObject(arena, io, pError);
 }
 
@@ -313,8 +320,11 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
         goto done; /* no other object types we understand in this module */
     }
 
-    /* find object */
+    /* find objects */
     for (i = 0; i < pem_nobjs; i++) {
+        if (NULL == gobj[i])
+            continue;
+
         plog("  %d type = %d\n", i, gobj[i]->type);
         if ((type == gobj[i]->type)
             && (slotID == gobj[i]->slotID)

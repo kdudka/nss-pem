@@ -56,24 +56,6 @@ PRInt32 count = 0;
 
 #define PEM_ITEM_CHUNK  512
 
-#define PUT_Object(obj,err) \
-  { \
-    if (count >= size) { \
-    gobj = gobj ? \
-                nss_ZREALLOCARRAY(gobj, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) : \
-                nss_ZNEWARRAY(NULL, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) ; \
-      if ((pemInternalObject **)NULL == gobj) { \
-        err = CKR_HOST_MEMORY; \
-        goto loser; \
-      } \
-      size += PEM_ITEM_CHUNK; \
-    } \
-    (gobj)[ count ] = (obj); \
-    count++; \
-  }
-
 /*
  * simple cert decoder to avoid the cost of asn1 engine
  */
@@ -195,7 +177,7 @@ GetCertFields(unsigned char *cert, int cert_length,
     return SECSuccess;
 }
 
-pemInternalObject *
+static pemInternalObject *
 CreateObject(CK_OBJECT_CLASS objClass,
              pemObjectType type, SECItem * certDER,
              SECItem * keyDER, char *filename,
@@ -286,6 +268,67 @@ CreateObject(CK_OBJECT_CLASS objClass,
     return o;
 }
 
+pemInternalObject *
+AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
+                  pemObjectType type, SECItem * certDER,
+                  SECItem * keyDER, char *filename,
+                  int objid, CK_SLOT_ID slotID)
+{
+    int i;
+
+    /* FIXME: copy-pasted from CreateObject */
+    const char *nickname = strrchr(filename, '/');
+    if (nickname)
+        nickname++;
+    else
+        nickname = filename;
+
+    /* first look for the object in gobj, it might be already there */
+    for (i = 0; i < pem_nobjs; i++) {
+        if (NULL == gobj[i])
+            continue;
+
+        if ((gobj[i]->objClass == objClass)
+                && (gobj[i]->type == type)
+                && (gobj[i]->slotID == slotID)
+#if 0
+                /* FIXME: is it safe to return object with different objid? */
+                && (atoi(gobj[i]->id.data) == objid)
+#endif
+                && (0 == strcmp(gobj[i]->nickname, nickname))) {
+
+            plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
+            gobj[i]->refCount ++;
+            return gobj[i];
+        }
+    }
+
+    /* object not found, we need to create it */
+    pemInternalObject *io = CreateObject(objClass, type, certDER, keyDER,
+                                         filename, objid, slotID);
+
+    io->gobjIndex = count;
+
+    /* add object to global array */
+    if (count >= size) {
+        gobj = gobj ?
+            nss_ZREALLOCARRAY(gobj, pemInternalObject *,
+                    (size+PEM_ITEM_CHUNK) ) :
+            nss_ZNEWARRAY(NULL, pemInternalObject *,
+                    (size+PEM_ITEM_CHUNK) ) ;
+
+        if ((pemInternalObject **)NULL == gobj)
+            return NULL;
+        size += PEM_ITEM_CHUNK;
+    }
+    gobj[count] = io;
+    count++;
+    pem_nobjs++;
+
+    io->refCount ++;
+    return io;
+}
+
 CK_RV
 AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                CK_SLOT_ID slotID)
@@ -314,44 +357,37 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
 
             snprintf(nickname, 1024, "%s - %d", certfile, i);
 
-            o = CreateObject(CKO_CERTIFICATE, pemCert, objs[i], NULL,
-                             nickname, 0, slotID);
+            o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[i], NULL,
+                                   nickname, 0, slotID);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
-            PUT_Object(o, error);
             if (error != CKR_OK)
                 goto loser;
             o = NULL;
-            pem_nobjs++;
 
             /* Add the CA trust object */
-            o = CreateObject(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
-                             nickname, 0, slotID);
+            o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
+                                   nickname, 0, slotID);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
-            PUT_Object(o, error);
-            pem_nobjs++;
         }                       /* for */
     } else {
         objid = pem_nobjs + 1;
-        o = CreateObject(CKO_CERTIFICATE, pemCert, objs[0], NULL, certfile,
-                         objid, slotID);
+        o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[0], NULL, certfile,
+                              objid, slotID);
         if (o == NULL) {
             error = CKR_GENERAL_ERROR;
             goto loser;
         }
 
-        PUT_Object(o, error);
-
         if (error != CKR_OK)
             goto loser;
 
         o = NULL;
-        pem_nobjs++;
 
         if (keyfile) {          /* add the private key */
             SECItem **keyobjs = NULL;
@@ -363,15 +399,12 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
-            o = CreateObject(CKO_PRIVATE_KEY, pemBareKey, objs[0],
-                             keyobjs[0], certfile, objid, slotID);
+            o = AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, objs[0],
+                                  keyobjs[0], certfile, objid, slotID);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
-
-            PUT_Object(o, error);
-            pem_nobjs++;
         }
     }
 
@@ -487,14 +520,9 @@ pem_Finalize
     NSSCKFWInstance * fwInstance
 )
 {
-    int i;
-
     plog("pem_Finalize\n");
     if (!pemInitialized)
         return;
-
-    for (i = 0; i < pem_nobjs; ++i)
-        pem_DestroyInternalObject(gobj[i]);
 
     nss_ZFreeIf(gobj);
     gobj = NULL;

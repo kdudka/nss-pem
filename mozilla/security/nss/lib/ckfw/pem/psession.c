@@ -158,6 +158,9 @@ pem_mdSession_CreateObject
                             ulAttributeCount, pError);
 }
 
+/*
+ * increase refCount of internal object(s)
+ */
 NSSCKMDObject *
 pem_mdSession_CopyObject
 (
@@ -175,120 +178,19 @@ pem_mdSession_CopyObject
     CK_RV * pError
 )
 {
-    pemInternalObject *new = NULL;
-    NSSCKMDObject *mdObject = nssCKFWObject_GetMDObject(fwOldObject);
-    pemInternalObject *old = (pemInternalObject *) mdObject->etc;
-    CK_RV error = CKR_OK;
+    pemInternalObject *io = (pemInternalObject *) mdOldObject->etc;
 
-    plog("pem_mdSession_CopyObject: ");
-    /*
-     * now handle the various object types
-     */
-    *pError = CKR_OK;
-    switch (old->type) {
-    case pemCert:
-        plog("pemCert\n");
-        if ((pemInternalObject *) NULL == 0) {
-            new = nss_ZNEW(NULL, pemInternalObject);
-            if ((pemInternalObject *) NULL == new) {
-                *pError = CKR_HOST_MEMORY;
-                goto loser;
-            }
-            memset(&new->u.cert, 0, sizeof(new->u.cert));
-            new->objClass = CKO_CERTIFICATE;
-            new->type = pemCert;
-            new->derCert = nss_ZNEW(NULL, SECItem);
-            new->derCert->data =
-                (void *) nss_ZAlloc(NULL, old->derCert->len);
-            new->derCert->len = old->derCert->len;
-            nsslibc_memcpy(new->derCert->data, old->derCert->data,
-                        old->derCert->len);
-            new->nickname =
-                (char *) nss_ZAlloc(NULL, strlen(old->nickname) + 1);
-            strcpy(new->nickname, old->nickname);
-            new->id.data = (void *) nss_ZAlloc(NULL, old->id.size);
-            (void) nsslibc_memcpy(new->id.data, old->id.data,
-                                  old->id.size);
-            new->id.size = old->id.size;
+    if (NULL == io->list) {
+        io->refCount ++;
+    } else {
+        /* go through list of objects */
+        pemObjectListItem *item = io->list;
+        while (item) {
+            item->io->refCount ++;
+            item = item->next;
         }
-        break;
-    case pemBareKey:
-        plog("pemBareKey\n");
-        if ((pemInternalObject *) NULL == 0) {
-            new = nss_ZNEW(NULL, pemInternalObject);
-            if ((pemInternalObject *) NULL == new) {
-                *pError = CKR_HOST_MEMORY;
-                goto loser;
-            }
-            memset(&new->u.key, 0, sizeof(new->u.key));
-            new->objClass = CKO_PRIVATE_KEY;
-            new->type = pemBareKey;
-            new->derCert = nss_ZNEW(NULL, SECItem);
-            new->derCert->data =
-                (void *) nss_ZAlloc(NULL, old->derCert->len);
-            new->derCert->len = old->derCert->len;
-            new->id.data = (void *) nss_ZAlloc(NULL, old->id.size);
-            (void) nsslibc_memcpy(new->id.data, old->id.data,
-                                  old->id.size);
-            new->id.size = old->id.size;
-            nsslibc_memcpy(new->derCert->data, old->derCert->data,
-                        old->derCert->len);
-            new->nickname =
-                (char *) nss_ZAlloc(NULL, strlen(old->nickname) + 1);
-            strcpy(new->nickname, old->nickname);
-            new->u.key.key.privateKey = nss_ZNEW(NULL, SECItem);
-            new->u.key.key.privateKey->data =
-                (void *) nss_ZAlloc(NULL, old->u.key.key.privateKey->len);
-            new->u.key.key.privateKey->len =
-                old->u.key.key.privateKey->len;
-            nsslibc_memcpy(new->u.key.key.privateKey->data,
-                           old->u.key.key.privateKey->data,
-                           old->u.key.key.privateKey->len);
-        }
-        goto done;
-        break;
-    case pemTrust:
-        plog("pemTrust\n");
-        if ((pemInternalObject *) NULL == 0) {
-            new = nss_ZNEW(NULL, pemInternalObject);
-            if ((pemInternalObject *) NULL == new) {
-                *pError = CKR_HOST_MEMORY;
-                goto loser;
-            }
-            memset(&new->u.trust, 0, sizeof(new->u.trust));
-            new->objClass = CKO_CERTIFICATE;
-            new->type = pemTrust;
-            new->derCert = nss_ZNEW(NULL, SECItem);
-            new->derCert->data =
-                (void *) nss_ZAlloc(NULL, old->derCert->len);
-            new->derCert->len = old->derCert->len;
-            nsslibc_memcpy(new->derCert->data, old->derCert->data,
-                        old->derCert->len);
-            new->nickname =
-                (char *) nss_ZAlloc(NULL, strlen(old->nickname) + 1);
-            strcpy(new->nickname, old->nickname);
-            new->id.data = (void *) nss_ZAlloc(NULL, old->id.size);
-            (void) nsslibc_memcpy(new->id.data, old->id.data,
-                                  old->id.size);
-            new->id.size = old->id.size;
-        }
-        goto done;
-    default:
-        plog("Unknown: %08x\n", old->type);
-        goto done; /* no other object types we understand in this module */
     }
-    if (CKR_OK != *pError) {
-        goto loser;
-    }
-
-  done:
-    *pError = CKR_OK;
-    return (NSSCKMDObject *) pem_CreateMDObject(arena, new, &error);
-
-  loser:
-    *pError = CKR_GENERAL_ERROR;
-    return (NSSCKMDObject *) NULL;
-
+    return mdOldObject;
 }
 
 CK_RV
@@ -333,6 +235,9 @@ pem_mdSession_Login
 
     /* Find the right key object */
     for (i = 0; i < pem_nobjs; i++) {
+        if (NULL == gobj[i])
+            continue;
+
         if ((slotID == gobj[i]->slotID) && (gobj[i]->type == pemBareKey)) {
             io = gobj[i];
             break;
