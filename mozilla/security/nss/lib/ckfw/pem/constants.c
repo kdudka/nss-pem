@@ -49,7 +49,7 @@
 #endif /* NSSCKT_H */
 
 #ifndef NSSCKBI_H
-#include "nssckbi.h"
+#include "../builtins/nssckbi.h"
 #endif /* NSSCKBI_H */
 
 NSS_IMPLEMENT_DATA const CK_VERSION
