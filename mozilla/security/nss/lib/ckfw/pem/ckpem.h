@@ -95,6 +95,7 @@ struct pemTrustObjectStr {
 typedef struct pemTrustObjectStr pemTrustObject;
 
 typedef enum {
+  pemAll = -1, /* matches all types */
   pemRaw,
   pemCert,
   pemBareKey,

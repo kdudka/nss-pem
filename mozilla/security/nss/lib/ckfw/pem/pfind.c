@@ -313,8 +313,9 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
         plog("CKO_NETSCAPE_BUILTIN_ROOT_LIST\n");
         goto done;
     case CK_INVALID_HANDLE:
+        type = pemAll; /* look through all objectclasses - ignore the type field */
         plog("CK_INVALID_HANDLE\n");
-        goto done;
+        break;
     default:
         plog("no other object types %08x\n", objClass);
         goto done; /* no other object types we understand in this module */
@@ -322,15 +323,20 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
 
     /* find objects */
     for (i = 0; i < pem_nobjs; i++) {
+        int match = 1; /* matches type if type not specified */
         if (NULL == gobj[i])
             continue;
 
         plog("  %d type = %d\n", i, gobj[i]->type);
-        if ((type == gobj[i]->type)
-            && (slotID == gobj[i]->slotID)
-            && (CK_TRUE ==
-                pem_match(pTemplate, ulAttributeCount, gobj[i]))) {
-
+        if (type != pemAll) {
+            /* type specified - must match given type */
+            match = (type == gobj[i]->type);
+        }
+        if (match) {
+            match = (slotID == gobj[i]->slotID) &&
+                (CK_TRUE == pem_match(pTemplate, ulAttributeCount, gobj[i]));
+        }
+        if (match) {
             pemInternalObject *o = gobj[i];
             PUT_Object(o, *pError);
         }
