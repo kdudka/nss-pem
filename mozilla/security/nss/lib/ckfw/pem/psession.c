@@ -178,7 +178,15 @@ pem_mdSession_CopyObject
     CK_RV * pError
 )
 {
+    NSSCKMDObject *rvmdObject = NULL;
     pemInternalObject *io = (pemInternalObject *) mdOldObject->etc;
+
+    /* make a new mdObject */
+    rvmdObject = nss_ZNEW(arena, NSSCKMDObject);
+    if ((NSSCKMDObject *) NULL == rvmdObject) {
+        *pError = CKR_HOST_MEMORY;
+        return (NSSCKMDObject *) NULL;
+    }
 
     if (NULL == io->list) {
         io->refCount ++;
@@ -190,7 +198,10 @@ pem_mdSession_CopyObject
             item = item->next;
         }
     }
-    return mdOldObject;
+    /* struct (shallow) copy the old one */
+    *rvmdObject = *mdOldObject;
+
+    return rvmdObject;
 }
 
 CK_RV
