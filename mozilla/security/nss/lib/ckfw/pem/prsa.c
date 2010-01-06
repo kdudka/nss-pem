@@ -328,7 +328,10 @@ pem_mdCryptoOperationRSAPriv_Destroy
 
     if (iOperation->buffer) {
         nssItem_Destroy(iOperation->buffer);
+        iOperation->buffer = NULL;
     }
+    pem_DestroyPrivateKey(iOperation->lpk);
+    iOperation->lpk = NULL;
     nss_ZFreeIf(iOperation);
 }
 
