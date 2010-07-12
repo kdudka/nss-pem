@@ -164,7 +164,8 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
             int key = 0;
 	    while ((asc) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
                 key = 0;
-		if (strncmp(body, "-----BEGIN RSA PRIVATE KEY", 25) == 0) {
+		if ((strncmp(body, "-----BEGIN RSA PRIVATE KEY", 25) == 0) ||
+		    (strncmp(body, "-----BEGIN PRIVATE KEY", 21) == 0)) {
                     key = 1;
 		    c = body;
 		    body = strchr(body, '\n');
