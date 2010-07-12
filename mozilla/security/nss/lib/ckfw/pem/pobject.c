@@ -172,6 +172,8 @@ static const NSSItem pem_trusted = {
     (void *) &ckt_netscape_trusted, (PRUint32) sizeof(CK_TRUST)
 };
 
+/* SEC_SkipTemplate is already defined and exported by libnssutil */
+#ifdef SEC_SKIP_TEMPLATE
 /*
  * Template for skipping a subitem.
  *
@@ -182,6 +184,7 @@ static const NSSItem pem_trusted = {
 const SEC_ASN1Template SEC_SkipTemplate[] = {
     {SEC_ASN1_SKIP}
 };
+#endif
 
 /*
  * Find the subjectName in a DER encoded certificate
