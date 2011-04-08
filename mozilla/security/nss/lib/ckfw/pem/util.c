@@ -96,9 +96,6 @@ static SECItem *AllocItem(SECItem * item, unsigned int len)
     return (result);
 
   loser:
-    if (result != NULL) {
-	SECITEM_FreeItem(result, (item == NULL) ? PR_TRUE : PR_FALSE);
-    }
     return (NULL);
 }
 
@@ -110,7 +107,7 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 
     prStatus = PR_GetOpenFileInfo(src, &info);
 
-    if (prStatus != PR_SUCCESS) {
+    if (prStatus != PR_SUCCESS || info.type == PR_FILE_DIRECTORY) {
 	return SECFailure;
     }
 
@@ -126,8 +123,7 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 
     return SECSuccess;
   loser:
-    SECITEM_FreeItem(dst, PR_FALSE);
-    nss_ZFreeIf(dst);
+    nss_ZFreeIf(dst->data);
     return SECFailure;
 }
 
@@ -153,6 +149,10 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 
 	/* Read in ascii data */
 	rv = FileToItem(&filedata, inFile);
+	if (rv != SECSuccess) {
+	    PR_Close(inFile);
+	    return -1;
+	}
 	asc = (char *) filedata.data;
 	if (!asc) {
 	    PR_Close(inFile);
@@ -252,7 +252,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     } else {
 	/* Read in binary der */
 	rv = FileToItem(der, inFile);
-	if (rv) {
+	if (rv != SECSuccess) {
 	    PR_Close(inFile);
 	    return -1;
 	}
