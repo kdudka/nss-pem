@@ -1,3 +1,6 @@
+#ifndef CKPEM_H
+#define CKPEM_H
+
 #include "nssckmdt.h"
 #include "nssckfw.h"
 #include "ckfwtm.h"
@@ -254,8 +257,8 @@ unsigned int pem_PrivateModulusLen(pemLOWKEYPrivateKey *privk);
 /* ptoken.c */
 NSSCKMDToken * pem_NewToken(NSSCKFWInstance *fwInstance, CK_RV *pError);
 
+/* util.c */
 void open_log();
-void close_log();
 void plog(const char *fmt, ...);
 
-#define PEM_H 1
+#endif /* CKPEM_H */

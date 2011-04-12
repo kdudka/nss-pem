@@ -41,6 +41,7 @@
 #include "prtime.h"
 #include "prlong.h"
 #include "prerror.h"
+#include "prlog.h"
 #include "prprf.h"
 #include "plgetopt.h"
 #include "prenv.h"
@@ -51,6 +52,9 @@
 #include "cryptohi.h"
 #include "secpkcs7.h"
 #include "secerr.h"
+
+#include "ckpem.h"
+
 #include <stdarg.h>
 
 #define CHUNK_SIZE  512
@@ -267,34 +271,34 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     return -1;
 }
 
-FILE *plogfile;
+#ifdef DEBUG
+#define LOGGING_BUFFER_SIZE 400
+#define PEM_DEFAULT_LOG_FILE "/tmp/pkcs11.log"
+static const char *pemLogModuleName = "PEM";
+static PRLogModuleInfo* pemLogModule;
+#endif
 
 void open_log()
 {
 #ifdef DEBUG
-    plogfile = fopen("/tmp/pkcs11.log", "a");
-#endif
+    const char *nsprLogFile = PR_GetEnv("NSPR_LOG_FILE");
 
-    return;
-}
+    pemLogModule = PR_NewLogModule(pemLogModuleName);
 
-void close_log()
-{
-#ifdef DEBUG
-    fclose(plogfile);
+    (void) PR_SetLogFile(nsprLogFile ? nsprLogFile : PEM_DEFAULT_LOG_FILE);
+    /* If false, the log file will remain what it was before */
 #endif
-    return;
 }
 
 void plog(const char *fmt, ...)
 {
 #ifdef DEBUG
+    char buf[LOGGING_BUFFER_SIZE];
     va_list ap;
 
     va_start(ap, fmt);
-    vfprintf(plogfile, fmt, ap);
+    PR_vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
-
-    fflush(plogfile);
+    PR_LOG(pemLogModule, PR_LOG_DEBUG, ("%s", buf));
 #endif
 }
