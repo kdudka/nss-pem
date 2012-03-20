@@ -349,6 +349,9 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
     if (io == NULL)
         return NULL;
 
+    /* initialize pointers to functions */
+    pem_CreateMDObject(NULL, io, NULL);
+
     io->gobjIndex = count;
 
     /* add object to global array */
