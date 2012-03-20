@@ -1117,7 +1117,7 @@ pem_CreateObject
 
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
         if (nobjs < 1)
-            return (NSSCKMDObject *) NULL;
+            goto loser;
 
         objid = -1;
         /* Brute force: find the id of the key, if any, in this slot */
@@ -1176,7 +1176,7 @@ pem_CreateObject
 
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_FALSE /* keys only */);
         if (nobjs < 1)
-            return (NSSCKMDObject *) NULL;
+            goto loser;
 
         certDER.len = 0; /* in case there is no equivalent cert */
 
