@@ -1179,6 +1179,7 @@ pem_CreateObject
             goto loser;
 
         certDER.len = 0; /* in case there is no equivalent cert */
+        certDER.data = NULL;
 
         objid = -1;
         for (i = 0; i < pem_nobjs; i++) {
