@@ -379,7 +379,6 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                CK_SLOT_ID slotID)
 {
     pemInternalObject *o;
-    SECItem certDER;
     CK_RV error = 0;
     int objid, i;
     int nobjs = 0;
@@ -387,7 +386,6 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     char *ivstring = NULL;
     int cipher;
 
-    certDER.data = NULL;
     nobjs = ReadDERFromFile(&objs, certfile, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
     if (nobjs <= 0) {
         nss_ZFreeIf(objs);
@@ -471,32 +469,36 @@ pem_Initialize
 )
 {
     CK_RV rv;
-    /* parse the initialization string and initialize CRLInstances */
+    /* parse the initialization string */
     char **certstrings = NULL;
+    char *modparms = NULL;
     PRInt32 numcerts = 0;
     PRBool status, error = PR_FALSE;
     int i;
+    CK_C_INITIALIZE_ARGS_PTR modArgs = NULL;
+
+    if (!fwInstance) return CKR_ARGUMENTS_BAD;
+
+    modArgs = NSSCKFWInstance_GetInitArgs(fwInstance);
+    if (modArgs &&
+       ((modArgs->flags & CKF_OS_LOCKING_OK) || (modArgs->CreateMutex != 0))) {
+        return CKR_CANT_LOCK;
+    }
 
     if (pemInitialized) {
         return CKR_OK;
     }
+
     RNG_RNGInit();
 
     open_log();
 
     plog("pem_Initialize\n");
 
-    unsigned char *modparms = NULL;
-    if (!fwInstance) {
-        return CKR_ARGUMENTS_BAD;
-    }
-
-    CK_C_INITIALIZE_ARGS_PTR modArgs =
-        NSSCKFWInstance_GetInitArgs(fwInstance);
     if (!modArgs || !modArgs->LibraryParameters) {
         goto done;
     }
-    modparms = (unsigned char *) modArgs->LibraryParameters;
+    modparms = (char *) modArgs->LibraryParameters;
     plog("Initialized with %s\n", modparms);
 
     /*
@@ -512,7 +514,7 @@ pem_Initialize
      *
      */
     status =
-        pem_ParseString((const char *) modparms, ' ', &numcerts,
+        pem_ParseString(modparms, ' ', &numcerts,
                         &certstrings);
     if (status == PR_FALSE) {
         return CKR_ARGUMENTS_BAD;
