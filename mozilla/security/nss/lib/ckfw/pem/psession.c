@@ -255,6 +255,11 @@ pem_mdSession_Login
         }
     }
 
+    if (NULL == io) {
+        rv = CKR_SLOT_ID_INVALID;
+        goto loser;
+    }
+
     /* Convert the IV from hex into an array of bytes */
     iv = convert_iv(io->u.key.ivstring, 8);
 

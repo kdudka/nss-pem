@@ -407,9 +407,6 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
-            if (error != CKR_OK)
-                goto loser;
-            o = NULL;
 
             /* Add the CA trust object */
             o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
@@ -427,9 +424,6 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
             error = CKR_GENERAL_ERROR;
             goto loser;
         }
-
-        if (error != CKR_OK)
-            goto loser;
 
         o = NULL;
 

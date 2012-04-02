@@ -420,6 +420,11 @@ pem_mdCryptoOperationRSA_GetFinalLength
     const NSSItem *modulus =
         pem_FetchAttribute(iOperation->iKey, CKA_MODULUS);
 
+    if (NULL == modulus) {
+        *pError = CKR_FUNCTION_FAILED;
+        return 0;
+    }
+
     return modulus->size;
 }
 

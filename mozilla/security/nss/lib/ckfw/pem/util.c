@@ -164,7 +164,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 	}
 
 	/* check for headers and trailers and remove them */
-	if ((body = strstr(asc, "-----BEGIN")) != NULL) {
+	if (strstr(asc, "-----BEGIN") != NULL) {
             int key = 0;
 	    while ((asc) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
                 key = 0;
@@ -226,6 +226,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		    asc = trailer + 1;
 		    *trailer = '\0';
 		} else {
+		    free(der);
 		    goto loser;
 		}
 
@@ -246,8 +247,12 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 	    der = nss_ZNEW(NULL, SECItem);
 	    rv = ATOB_ConvertAsciiToItem(der, asc);
 	    if (rv) {
+		nss_ZFreeIf(der);
 		goto loser;
 	    }
+
+	    /* NOTE: This code path has never been tested. */
+	    PUT_Object(der, error);
 	}
 
 	nss_ZFreeIf(filedata.data);
