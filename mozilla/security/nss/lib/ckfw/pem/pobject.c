@@ -1113,28 +1113,12 @@ pem_CreateObject
     }
 
     if (objClass == CKO_CERTIFICATE) {
-        int i;
-
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
         if (nobjs < 1)
             goto loser;
 
-        objid = -1;
-        /* Brute force: find the id of the key, if any, in this slot */
-        for (i = 0; i < pem_nobjs; i++) {
-            if (NULL == gobj[i])
-                continue;
-
-            if ((slotID == gobj[i]->slotID)
-                && (gobj[i]->type == pemBareKey)) {
-                objid = atoi(gobj[i]->id.data);
-            }
-        }
-
-        if (objid == -1) {
-            /* We're just adding a cert, we'll assume the key is next */
-            objid = pem_nobjs + 1;
-        }
+        /* We're just adding a cert, we'll assume the key is next */
+        objid = pem_nobjs + 1;
 
         if (cacert) {
             /* Add the certificate. There may be more than one */

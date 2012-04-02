@@ -213,6 +213,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
     case CKO_PRIVATE_KEY:
         plog("Creating key id %d in slot %ld\n", objid, slotID);
         memset(&o->u.key, 0, sizeof(o->u.key));
+        nickname = filename;
         break;
     case CKO_NETSCAPE_TRUST:
         plog("Creating trust nick %s id %d in slot %ld\n", nickname, objid, slotID);
@@ -318,7 +319,7 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
 
     /* FIXME: copy-pasted from CreateObject */
     const char *nickname = strrchr(filename, '/');
-    if (nickname)
+    if (nickname && CKO_PRIVATE_KEY != objClass)
         nickname++;
     else
         nickname = filename;
