@@ -1225,6 +1225,7 @@ pem_CreateObject
     nss_ZFreeIf(filename);
     nss_ZFreeIf(derlist);
     if ((pemInternalObject *) NULL == listItem->io) {
+        pem_DestroyInternalObject(listObj);
         return (NSSCKMDObject *) NULL;
     }
     return pem_CreateMDObject(NULL, listObj, pError);
