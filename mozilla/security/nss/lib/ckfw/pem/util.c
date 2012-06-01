@@ -244,10 +244,13 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
                 }
 	    }			/* while */
 	} else {		/* No headers and footers, translate the blob */
-	    der = nss_ZNEW(NULL, SECItem);
+	    der = (SECItem *) malloc(sizeof(SECItem));
+	    if (der == NULL)
+		goto loser;
+
 	    rv = ATOB_ConvertAsciiToItem(der, asc);
 	    if (rv) {
-		nss_ZFreeIf(der);
+		free(der);
 		goto loser;
 	    }
 
