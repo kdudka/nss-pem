@@ -66,6 +66,8 @@ dataStart(unsigned char *buf, unsigned int length,
 {
     unsigned char tag;
     unsigned int used_length = 0;
+    if (!length)
+        return NULL;
 
     tag = buf[used_length++];
 
@@ -74,7 +76,7 @@ dataStart(unsigned char *buf, unsigned int length,
     }
 
     /* blow out when we come to the end */
-    if (tag == 0) {
+    if (tag == 0 || length <= used_length) {
         return NULL;
     }
 
@@ -86,6 +88,9 @@ dataStart(unsigned char *buf, unsigned int length,
         *data_length = 0;
 
         while (len_count-- > 0) {
+            if (length <= used_length)
+                return NULL;
+
             *data_length = (*data_length << 8) | buf[used_length++];
         }
     }
