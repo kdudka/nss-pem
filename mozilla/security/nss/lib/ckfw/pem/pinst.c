@@ -324,6 +324,33 @@ fail:
     return NULL;
 }
 
+/* Compare the DER encoding of the internal object against those
+ * of the provided certDER or keyDER according to its objClass.
+ */
+static PRBool
+derEncodingsMatch(CK_OBJECT_CLASS objClass, pemInternalObject * obj,
+                  SECItem * certDER, SECItem * keyDER)
+{
+    SECComparison result;
+
+    switch (objClass) {
+    case CKO_CERTIFICATE:
+    case CKO_NETSCAPE_TRUST:
+        result = SECITEM_CompareItem(obj->derCert, certDER);
+        break;
+
+    case CKO_PRIVATE_KEY:
+        result = SECITEM_CompareItem(obj->u.key.key.privateKey, keyDER);
+        break;
+
+    default:
+        /* unhandled object class */
+        return PR_FALSE;
+    }
+
+    return SECEqual == result;
+}
+
 static CK_RV
 LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
 {
@@ -366,14 +393,13 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
         if (NULL == gobj[i])
             continue;
 
+        /* Comparing DER encodings is dependable and frees the PEM module
+         * from having to require clients to provide unique nicknames.
+         */
         if ((gobj[i]->objClass == objClass)
                 && (gobj[i]->type == type)
                 && (gobj[i]->slotID == slotID)
-#if 0
-                /* FIXME: is it safe to return object with different objid? */
-                && (atoi(gobj[i]->id.data) == objid)
-#endif
-                && (0 == strcmp(gobj[i]->nickname, nickname))) {
+                && derEncodingsMatch(objClass, gobj[i], certDER, keyDER)) {
 
             /* While adding a client certificate we (wrongly?) assumed that the
              * key object will follow right after the cert object.  However, if
