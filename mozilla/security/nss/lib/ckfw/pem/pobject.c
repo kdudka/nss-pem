@@ -1174,6 +1174,10 @@ pem_CreateObject
                 objid = atoi(gobj[i]->id.data);
                 certDER.data =
                     (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
+
+                if (certDER.data == NULL)
+                    goto loser;
+
                 certDER.len = gobj[i]->derCert->len;
                 nsslibc_memcpy(certDER.data, gobj[i]->derCert->data,
                                gobj[i]->derCert->len);
