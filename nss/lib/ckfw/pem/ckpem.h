@@ -247,7 +247,7 @@ PRBool pem_FreeParsedStrings(PRInt32 numStrings, char** instrings);
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass, pemObjectType type,
                   SECItem *certDER, SECItem *keyDER, char *filename, int objid,
-                  CK_SLOT_ID slotID);
+                  CK_SLOT_ID slotID, PRBool *pAdded);
 
 void pem_DestroyInternalObject (pemInternalObject *io);
 

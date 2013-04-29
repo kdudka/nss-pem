@@ -1134,7 +1134,7 @@ pem_CreateObject
                     APPEND_LIST_ITEM(listItem);
                 listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
                                                  derlist[c], NULL, nickname, 0,
-                                                 slotID);
+                                                 slotID, NULL);
                 if (listItem->io == NULL)
                     goto loser;
 
@@ -1142,14 +1142,14 @@ pem_CreateObject
                 APPEND_LIST_ITEM(listItem);
                 listItem->io = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust,
                                                  derlist[c], NULL, nickname, 0,
-                                                 slotID);
+                                                 slotID, NULL);
                 if (listItem->io == NULL)
                     goto loser;
             }
         } else {
             listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
                                              derlist[0], NULL, filename, objid,
-                                             slotID);
+                                             slotID, NULL);
             if (listItem->io == NULL)
                 goto loser;
         }
@@ -1158,6 +1158,7 @@ pem_CreateObject
         int i;
         SECItem certDER;
         CK_SESSION_HANDLE hSession;
+        PRBool added;
 
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_FALSE /* keys only */);
         if (nobjs < 1)
@@ -1190,7 +1191,8 @@ pem_CreateObject
             objid = pem_nobjs + 1;
 
         listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
-                                          derlist[0], filename, objid, slotID);
+                                          derlist[0], filename, objid, slotID,
+                                          &added);
         if (listItem->io == NULL)
             goto loser;
 
@@ -1201,7 +1203,7 @@ pem_CreateObject
         /* If the key was encrypted then free the session to make it appear that
          * the token was removed so we can force a login.
          */
-        if (cipher) {
+        if (cipher && added) {
             /* FIXME: Why 1.0s? Is it enough? Isn't it too much?
              * What about e.g. 3.14s? */
             PRIntervalTime onesec = PR_SecondsToInterval(1);

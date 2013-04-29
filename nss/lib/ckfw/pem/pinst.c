@@ -386,7 +386,7 @@ pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                   pemObjectType type, SECItem * certDER,
                   SECItem * keyDER, char *filename,
-                  int objid, CK_SLOT_ID slotID)
+                  int objid, CK_SLOT_ID slotID, PRBool *pAdded)
 {
     int i;
 
@@ -396,6 +396,9 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
         nickname++;
     else
         nickname = filename;
+
+    if (pAdded)
+        *pAdded = PR_FALSE;
 
     /* first look for the object in gobj, it might be already there */
     for (i = 0; i < pem_nobjs; i++) {
@@ -450,6 +453,9 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
     count++;
     pem_nobjs++;
 
+    if (pAdded)
+        *pAdded = PR_TRUE;
+
     io->refCount ++;
     return io;
 }
@@ -481,7 +487,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
             snprintf(nickname, 1024, "%s - %d", certfile, i);
 
             o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[i], NULL,
-                                   nickname, 0, slotID);
+                                   nickname, 0, slotID, NULL);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
@@ -489,7 +495,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
 
             /* Add the CA trust object */
             o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
-                                   nickname, 0, slotID);
+                                   nickname, 0, slotID, NULL);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
@@ -498,7 +504,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     } else {
         objid = pem_nobjs + 1;
         o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[0], NULL, certfile,
-                              objid, slotID);
+                              objid, slotID, NULL);
         if (o == NULL) {
             error = CKR_GENERAL_ERROR;
             goto loser;
@@ -517,7 +523,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                 goto loser;
             }
             o = AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, objs[0],
-                                  keyobjs[0], certfile, objid, slotID);
+                                  keyobjs[0], certfile, objid, slotID, NULL);
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
