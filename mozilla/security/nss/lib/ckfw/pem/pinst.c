@@ -182,6 +182,23 @@ GetCertFields(unsigned char *cert, int cert_length,
     return SECSuccess;
 }
 
+static CK_RV
+assignObjectID(pemInternalObject *o, int objid)
+{
+    char id[16];
+    int len;
+
+    sprintf(id, "%d", objid);
+    len = strlen(id) + 1;       /* zero terminate */
+    o->id.size = len;
+    o->id.data = nss_ZAlloc(NULL, len);
+    if (o->id.data == NULL)
+        return CKR_HOST_MEMORY;
+
+    nsslibc_memcpy(o->id.data, id, len);
+    return CKR_OK;
+}
+
 static pemInternalObject *
 CreateObject(CK_OBJECT_CLASS objClass,
              pemObjectType type, SECItem * certDER,
@@ -195,9 +212,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
     SECItem derSN;
     SECItem valid;
     SECItem subjkey;
-    char id[16];
     char *nickname;
-    int len;
 
     o = nss_ZNEW(NULL, pemInternalObject);
     if ((pemInternalObject *) NULL == o) {
@@ -231,13 +246,8 @@ CreateObject(CK_OBJECT_CLASS objClass,
         goto fail;
     strcpy(o->nickname, nickname);
 
-    sprintf(id, "%d", objid);
-    len = strlen(id) + 1;       /* zero terminate */
-    o->id.data = (void *) nss_ZAlloc(NULL, len);
-    if (o->id.data == NULL)
+    if (CKR_OK != assignObjectID(o, objid))
         goto fail;
-    (void) nsslibc_memcpy(o->id.data, id, len);
-    o->id.size = len;
 
     o->objClass = objClass;
     o->type = type;
