@@ -324,6 +324,28 @@ fail:
     return NULL;
 }
 
+static CK_RV
+LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
+{
+    int i;
+    for (i = 0; i < pem_nobjs; i++) {
+        CK_RV rv;
+        const pemInternalObject *obj = gobj[i];
+        if (NULL == obj)
+            continue;
+
+        if (atoi(obj->id.data) != oldKeyIdx)
+            continue;
+
+        nss_ZFreeIf(obj->id.data);
+        rv = assignObjectID(obj, newKeyIdx);
+        if (CKR_OK != rv)
+            return rv;
+    }
+
+    return CKR_OK;
+}
+
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                   pemObjectType type, SECItem * certDER,
@@ -352,6 +374,13 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                 && (atoi(gobj[i]->id.data) == objid)
 #endif
                 && (0 == strcmp(gobj[i]->nickname, nickname))) {
+
+            /* While adding a client certificate we (wrongly?) assumed that the
+             * key object will follow right after the cert object.  However, if
+             * the key object is shared by multiple client certificates, such
+             * an assumption does not hold.  We have to update the references.
+             */
+            LinkSharedKeyObject(pem_nobjs, i);
 
             plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
             gobj[i]->refCount ++;
