@@ -357,7 +357,7 @@ LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
     int i;
     for (i = 0; i < pem_nobjs; i++) {
         CK_RV rv;
-        const pemInternalObject *obj = gobj[i];
+        pemInternalObject *obj = gobj[i];
         if (NULL == obj)
             continue;
 
