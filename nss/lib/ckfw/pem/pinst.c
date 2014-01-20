@@ -303,6 +303,15 @@ CreateObject(CK_OBJECT_CLASS objClass,
             nss_ZFreeIf(o->u.key.key.privateKey);
             goto fail;
         }
+
+        /* store deep copy of original key DER so we can compare it later on */
+        o->u.key.key.privateKeyOrig = SECITEM_DupItem(keyDER);
+        if (o->u.key.key.privateKeyOrig == NULL) {
+            nss_ZFreeIf(o->u.key.key.privateKey->data);
+            nss_ZFreeIf(o->u.key.key.privateKey);
+            goto fail;
+        }
+
         o->u.key.key.privateKey->len = keyDER->len;
         nsslibc_memcpy(o->u.key.key.privateKey->data, keyDER->data,
                        keyDER->len);
@@ -340,7 +349,7 @@ derEncodingsMatch(CK_OBJECT_CLASS objClass, pemInternalObject * obj,
         break;
 
     case CKO_PRIVATE_KEY:
-        result = SECITEM_CompareItem(obj->u.key.key.privateKey, keyDER);
+        result = SECITEM_CompareItem(obj->u.key.key.privateKeyOrig, keyDER);
         break;
 
     default:

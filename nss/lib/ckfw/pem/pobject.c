@@ -609,6 +609,7 @@ pem_DestroyInternalObject
         }
         break;
     case pemBareKey:
+        SECITEM_FreeItem(io->u.key.key.privateKeyOrig, PR_TRUE);
         nss_ZFreeIf(io->u.key.key.coefficient.data);
         nss_ZFreeIf(io->u.key.key.exponent2.data);
         nss_ZFreeIf(io->u.key.key.exponent1.data);

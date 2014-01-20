@@ -53,6 +53,7 @@ struct pemKeyParamsStr {
   NSSItem         coefficient;
   unsigned char   publicExponentData[sizeof(CK_ULONG)];
   SECItem         *privateKey;
+  SECItem         *privateKeyOrig; /* deep copy of privateKey until decrypted */
   void            *pubKey;
 };
 typedef struct pemKeyParamsStr pemKeyParams;
