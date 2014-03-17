@@ -44,8 +44,6 @@
  * "PEM objects" cryptoki module.
  */
 
-NSS_EXTERN_DATA int token_needsLogin[NUM_SLOTS];
-
 static NSSUTF8 *
 pem_mdToken_GetLabel
 (

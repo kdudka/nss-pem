@@ -48,9 +48,6 @@
  * "PEM objects" cryptoki module.
  */
 
-NSS_EXTERN_DATA pemInternalObject **gobj;
-NSS_EXTERN_DATA int pem_nobjs;
-NSS_EXTERN_DATA int token_needsLogin[NUM_SLOTS];
 NSS_EXTERN_DATA const SEC_ASN1Template pem_RSAPrivateKeyTemplate[];
 
 void prepare_low_rsa_priv_key_for_asn1(NSSLOWKEYPrivateKey * key);

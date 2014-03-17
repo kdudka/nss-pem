@@ -47,10 +47,6 @@
  * "PEM objects" cryptoki module.
  */
 
-NSS_EXTERN_DATA pemInternalObject **gobj;
-NSS_EXTERN_DATA int pem_nobjs;
-NSS_EXTERN_DATA int token_needsLogin[NUM_SLOTS];
-
 #define APPEND_LIST_ITEM(item) do { \
     item->next = nss_ZNEW(NULL, pemObjectListItem); \
     if (NULL == item->next) \

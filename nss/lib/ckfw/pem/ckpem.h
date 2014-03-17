@@ -56,6 +56,7 @@ struct pemKeyParamsStr {
   NSSItem         exponent1;
   NSSItem         exponent2;
   NSSItem         coefficient;
+  /* TODO: split algoritm-specific data out */
   SECItem         *privateKey;
   SECItem         *privateKeyOrig; /* deep copy of privateKey until decrypted */
   void            *pubKey;
@@ -146,6 +147,10 @@ struct pemInternalObjectStr {
    * of slave objects */
   pemObjectListItem *list;
 };
+
+NSS_EXTERN_DATA pemInternalObject **gobj;
+NSS_EXTERN_DATA int pem_nobjs;
+NSS_EXTERN_DATA int token_needsLogin[];
 
 struct pemTokenStr {
   PRBool          logged_in;

@@ -44,9 +44,6 @@
  * "PEM objects" cryptoki module.
  */
 
-NSS_EXTERN_DATA pemInternalObject **gobj;
-NSS_EXTERN_DATA int pem_nobjs;
-
 struct pemFOStr {
     NSSArena *arena;
     CK_ULONG n;
