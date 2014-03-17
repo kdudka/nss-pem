@@ -141,36 +141,6 @@ pem_mdFindObjects_Next
     return pem_CreateMDObject(arena, io, pError);
 }
 
-#if 0
-static int
-pem_derUnwrapInt(unsigned char *src, int size, unsigned char **dest)
-{
-    unsigned char *start = src;
-    int len = 0;
-
-    if (*src++ != 2) {
-        return 0;
-    }
-    len = *src++;
-    if (len & 0x80) {
-        int count = len & 0x7f;
-        len = 0;
-
-        if (count + 2 > size) {
-            return 0;
-        }
-        while (count-- > 0) {
-            len = (len << 8) | *src++;
-        }
-    }
-    if (len + (src - start) != size) {
-        return 0;
-    }
-    *dest = src;
-    return len;
-}
-#endif
-
 static char * pem_attr_name(CK_ATTRIBUTE_TYPE type) {
     switch(type) {
     case CKA_CLASS:
@@ -223,7 +193,11 @@ pem_attrmatch(CK_ATTRIBUTE_PTR a, pemInternalObject * o) {
         return CK_TRUE;
     } else {
         plog("pem_attrmatch %s %08x: CK_FALSE\n", pem_attr_name(a->type), a->type);
-        plog("type: %08x, label: %s a->pValue %08x, b->data %08x\n", o->objClass, o->u.cert.label.data, a->pValue, b->data);
+        plog("type: %d, a->pValue %08x, b->data %08x", o->objClass, a->pValue, b->data);
+        if (o->objClass == CKO_CERTIFICATE) {
+            plog(", label: %s\n", o->u.cert.label.data);
+        }
+        plog("\n");
         return CK_FALSE;
     }
 }

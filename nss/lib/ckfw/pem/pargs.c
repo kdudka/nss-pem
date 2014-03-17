@@ -37,71 +37,68 @@
 
 #include <string.h>
 #include <nspr.h>
+#include <secport.h>
+#include <base.h>
 
-void *pem_Malloc(const PRInt32 sz)
+/*
+ * Returns a pointer to a new string, which is a duplicate of the string
+ * pointed to by inStr and of length inLen. The returned pointer can be
+ * passed to nss_ZFreeIf. Returns NULL if the new string cannot be allocated.
+ * 
+ * WARNING: This function could reference uninitialized memory if instr is
+ * smaller then inlen.
+ */
+static char *
+pem_StrNdup(const char *instr, PRInt32 inlen)
 {
-    return PR_Malloc(sz);
-}
+    char *buffer = NULL;
 
-char *pem_StrNdup(const char *instr, PRInt32 inlen)
-{
     if (!instr) {
         return NULL;
     }
 
-    size_t len = inlen;
-    if (!len) {
+    if (!inlen) {
         return NULL;
     }
-    char *buffer = (char *) pem_Malloc(len + 1);
+    buffer = (char *) nss_ZAlloc(NULL, inlen + 1);
     if (!buffer) {
         return NULL;
     }
-    memcpy(buffer, instr, len);
-    buffer[len] = 0; /* NULL termination */
+    memcpy(buffer, instr, (size_t) inlen);
+    buffer[inlen] = 0; /* NULL termination */
     return buffer;
 }
 
-char *pem_Strdup(const char *instr)
-{
-    if (!instr) {
-        return NULL;
-    }
-
-    size_t len = strlen(instr);
-    return pem_StrNdup(instr, len);
-}
-
-void pem_Free(char *instr)
-{
-    if (!instr) {
-        PR_ASSERT(0);
-    }
-    PR_Free(instr);
-}
-
-void
+/*
+** Add newstring to the list of strings.
+** Returns the new string count. If the count didn't increase,
+** it indicates a failure to allocate memory.
+*/
+static PRInt32
 addString(char ***returnedstrings, char *newstring, PRInt32 stringcount)
 {
-    char **stringarray = NULL;
     if (!returnedstrings || !newstring) {
-        return;
+        return stringcount;
     }
     if (!stringcount) {
         /* first string to be added, allocate buffer */
-        *returnedstrings =
-            (char **) PR_Malloc(sizeof(char *) * (stringcount + 1));
-        stringarray = *returnedstrings;
-    } else {
-        stringarray = (char **) PR_Realloc(*returnedstrings,
-                                           sizeof(char *) * (stringcount + 1));
-        if (stringarray) {
-            *returnedstrings = stringarray;
+        *returnedstrings = (char **) nss_ZNEWARRAY(NULL, char*, 1);
+        if (!*returnedstrings) {
+            /* failure, caller still owns newstring */
+            return 0;
         }
-    }
-    if (stringarray) {
-        stringarray[stringcount] = newstring;
-    }
+    } else {
+        char **stringarray = NULL;
+        stringarray = (char **)
+                nss_ZREALLOCARRAY(*returnedstrings, char*, (stringcount + 1));
+        if (!stringarray) {
+            return stringcount;
+        }
+        *returnedstrings = stringarray;
+     }
+
+    (*returnedstrings)[stringcount] = newstring;
+    return stringcount+1;
 }
 
 PRBool
@@ -153,10 +150,8 @@ PRBool pem_FreeParsedStrings(PRInt32 numStrings, char **instrings)
     PRInt32 counter;
     for (counter = 0; counter < numStrings; counter++) {
         char *astring = instrings[counter];
-        if (astring) {
-            pem_Free(astring);
-        }
+        nss_ZFreeIf(astring);
     }
-    PR_Free((void *) instrings);
+    nss_ZFreeIf(instrings);
     return PR_TRUE;
 }

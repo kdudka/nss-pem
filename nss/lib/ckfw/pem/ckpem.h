@@ -26,11 +26,16 @@
 #include "ckt.h"
 #endif /* CKT_H */
 
+/* FIXME don't hard-code the number of slots */
 #define NUM_SLOTS 8
 
+/* FIXME pem module slot ID's */
+#define PEM_MIN_USER_SLOT_ID 0
+#define PEM_MAX_USER_SLOT_ID 8
+
 /*
- * statically defined raw objects. Allows us to data description objects
- * to this PKCS #11 module.
+ * statically defined raw objects. Allows us to hold data description objects
+ * in this PKCS #11 module.
  */
 struct pemRawObjectStr {
   CK_ULONG n;
@@ -51,7 +56,6 @@ struct pemKeyParamsStr {
   NSSItem         exponent1;
   NSSItem         exponent2;
   NSSItem         coefficient;
-  unsigned char   publicExponentData[sizeof(CK_ULONG)];
   SECItem         *privateKey;
   SECItem         *privateKeyOrig; /* deep copy of privateKey until decrypted */
   void            *pubKey;
@@ -63,8 +67,6 @@ typedef struct pemKeyParamsStr pemKeyParams;
  * while the CA is issuing the certificate.
  */
 struct pemKeyObjectStr {
-  char            *provName;
-  char            *containerName;
   pemKeyParams    key;
   char            *ivstring;
   int             cipher;
@@ -84,9 +86,6 @@ struct pemCertObjectStr {
   unsigned char   sha1_hash[SHA1_LENGTH];
   unsigned char   md5_hash[MD5_LENGTH];
   pemKeyParams key;
-  unsigned char   *labelData;
-  /* static data: to do, make this dynamic like labelData */
-  unsigned char   derSerial[128];
 };
 typedef struct pemCertObjectStr pemCertObject;
 
@@ -153,27 +152,12 @@ struct pemTokenStr {
 };
 typedef struct pemTokenStr pemToken;
 
-/* our raw object data array */
-NSS_EXTERN_DATA pemInternalObject nss_pem_data[];
-NSS_EXTERN_DATA const PRUint32               nss_pem_nObjects;
-
-  PRBool          logged_in;
-
-/* our raw object data array */
-NSS_EXTERN_DATA pemInternalObject nss_pem_data[];
-NSS_EXTERN_DATA const PRUint32               nss_pem_nObjects;
-
-NSS_EXTERN_DATA pemInternalObject pem_data[];
-NSS_EXTERN_DATA const PRUint32               pem_nObjects;
-
 NSS_EXTERN_DATA const CK_VERSION   pem_CryptokiVersion;
 NSS_EXTERN_DATA const NSSUTF8 *    pem_ManufacturerID;
 NSS_EXTERN_DATA const NSSUTF8 *    pem_LibraryDescription;
 NSS_EXTERN_DATA const CK_VERSION   pem_LibraryVersion;
-NSS_EXTERN_DATA const NSSUTF8 *    pem_SlotDescription;
 NSS_EXTERN_DATA const CK_VERSION   pem_HardwareVersion;
 NSS_EXTERN_DATA const CK_VERSION   pem_FirmwareVersion;
-NSS_EXTERN_DATA const NSSUTF8 *    pem_TokenLabel;
 NSS_EXTERN_DATA const NSSUTF8 *    pem_TokenModel;
 NSS_EXTERN_DATA const NSSUTF8 *    pem_TokenSerialNumber;
 
@@ -233,10 +217,19 @@ struct pemLOWKEYPrivateKeyStr {
 };
 typedef struct pemLOWKEYPrivateKeyStr pemLOWKEYPrivateKey;
 
+/* Read DER encoded data from a PEM file or a binary (der-encoded) file. */
 SECStatus ReadDERFromFile(SECItem ***derlist, char *filename, PRBool ascii, int *cipher, char **ivstring, PRBool certsonly);
+
+/* Fetch an attribute of the specified type. */
 const NSSItem * pem_FetchAttribute ( pemInternalObject *io, CK_ATTRIBUTE_TYPE type);
+
+/* Populate modulus and public exponent of the given internal object */
 void pem_PopulateModulusExponent(pemInternalObject *io);
+
+/* Create a pem module object */
 NSSCKMDObject * pem_CreateObject(NSSCKFWInstance *fwInstance, NSSCKFWSession *fwSession, NSSCKMDToken *mdToken, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulAttributeCount, CK_RV *pError);
+
+/* Create a new pem module slot */
 NSSCKMDSlot *pem_NewSlot( NSSCKFWInstance *fwInstance, CK_RV *pError);
 
 
@@ -259,7 +252,8 @@ unsigned int pem_PrivateModulusLen(pemLOWKEYPrivateKey *privk);
 NSSCKMDToken * pem_NewToken(NSSCKFWInstance *fwInstance, CK_RV *pError);
 
 /* util.c */
-void open_log();
+void open_nss_pem_log();
+/* no close_log */
 void plog(const char *fmt, ...);
 
 #endif /* CKPEM_H */

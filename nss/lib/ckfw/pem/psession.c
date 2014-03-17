@@ -65,7 +65,7 @@ static unsigned char *convert_iv(char *src, int num)
     char conv[3];
     unsigned char *c;
 
-    c = (unsigned char *) malloc((num) + 1);
+    c = (unsigned char *) nss_ZAlloc(NULL, (num) + 1);
     if (c == NULL)
         return NULL;
 
@@ -287,10 +287,8 @@ pem_mdSession_Login
                      io->u.key.key.privateKey->len);
     DES_DestroyContext(cx, PR_TRUE);
 
-    if (iv) {
-        free(iv);
-        iv = NULL;
-    }
+    nss_ZFreeIf(iv);
+    iv = NULL;
     if (rv != SECSuccess) {
         rv = CKR_PIN_INCORRECT;
         goto loser;
@@ -333,8 +331,7 @@ pem_mdSession_Login
   loser:
     if (arena)
         PORT_FreeArena(arena, PR_FALSE);
-    if (iv)
-        free(iv);
+    nss_ZFreeIf(iv);
     nss_ZFreeIf(output);
 
     return rv;

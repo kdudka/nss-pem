@@ -589,7 +589,6 @@ pem_DestroyInternalObject
     case pemRaw:
         return;
     case pemCert:
-        nss_ZFreeIf(io->u.cert.labelData);
         nss_ZFreeIf(io->u.cert.key.privateKey);
         nss_ZFreeIf(io->u.cert.key.pubKey);
         /* go through */
@@ -626,9 +625,9 @@ pem_DestroyInternalObject
         nss_ZFreeIf(io->derCert->data);
         nss_ZFreeIf(io->derCert);
 
-        /* strdup'd in ReadDERFromFile */
+        /* PORT_Strdup'd in ReadDERFromFile */
         if (io->u.key.ivstring)
-            free(io->u.key.ivstring);
+            PORT_Free(io->u.key.ivstring);
         break;
     }
 
@@ -1044,7 +1043,9 @@ pem_CreateObject
     int nobjs = 0;
     int i;
     int objid;
+#if 0
     pemToken *token;
+#endif
     int cipher;
     char *ivstring = NULL;
     pemInternalObject *listObj = NULL;
@@ -1073,7 +1074,9 @@ pem_CreateObject
     }
     slotID = nssCKFWSlot_GetSlotID(fwSlot);
 
+#if 0
     token = (pemToken *) mdToken->etc;
+#endif
 
     /*
      * only create keys and certs.
@@ -1226,8 +1229,8 @@ pem_CreateObject
   loser:
 
     for (i = 0; i < nobjs; i++) {
-        free(derlist[i]->data);
-        free(derlist[i]);
+        nss_ZFreeIf(derlist[i]->data);
+        nss_ZFreeIf(derlist[i]);
     }
     nss_ZFreeIf(filename);
     nss_ZFreeIf(derlist);

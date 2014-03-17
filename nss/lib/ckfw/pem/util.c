@@ -48,35 +48,28 @@
 #include "prnetdb.h"
 #include "base.h"
 #include "base64.h"
-
+#include "nssb64.h"
 #include "cryptohi.h"
 #include "secpkcs7.h"
 #include "secerr.h"
-
 #include "ckpem.h"
-
 #include <stdarg.h>
 
-#define CHUNK_SIZE  512
-#define PUT_Object(obj,err) \
-  { \
-    if (count >= size) { \
-    *derlist = *derlist ? \
-                nss_ZREALLOCARRAY(*derlist, SECItem *, \
-                               (size+CHUNK_SIZE) ) : \
-                nss_ZNEWARRAY(NULL, SECItem *, \
-                               (size+CHUNK_SIZE) ) ; \
-      if ((SECItem **)NULL == *derlist) { \
-        err = CKR_HOST_MEMORY; \
-        goto loser; \
-      } \
-      size += CHUNK_SIZE; \
-    } \
-    (*derlist)[ count ] = (obj); \
-    count++; \
-  }
-
-/* Read certificates from a flat file */
+static int put_object(SECItem *der, SECItem ***derlist, int *count)
+{
+    if (*derlist) {
+	*derlist = nss_ZREALLOCARRAY(*derlist, SECItem*, ((*count)+1));
+    } else {
+	*count = 0;
+	*derlist = nss_ZNEWARRAY(NULL, SECItem*, 1);
+    }
+    if (! (*derlist)) {
+	return CKR_HOST_MEMORY;
+    }
+    (*derlist)[ (*count) ] = (der);
+    (*count)++;
+    return 0;
+}
 
 static SECItem *AllocItem(SECItem * item, unsigned int len)
 {
@@ -109,6 +102,9 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
     PRInt32 numBytes;
     PRStatus prStatus;
 
+    if (!dst)
+	return SECFailure;
+
     prStatus = PR_GetOpenFileInfo(src, &info);
 
     if (prStatus != PR_SUCCESS || info.type == PR_FILE_DIRECTORY) {
@@ -131,17 +127,42 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
     return SECFailure;
 }
 
+static SECStatus ConvertAsciiToZAllocItem(SECItem *der, const char *ascii)
+{
+    SECStatus rv = SECFailure;
+    SECItem tmp;
+
+    if (!der)
+        return rv;
+
+    der->data = tmp.data = NULL;
+    der->len = tmp.len = 0;
+    if (!NSSBase64_DecodeBuffer(NULL, &tmp, ascii, strlen(ascii)))
+	return rv;
+
+    der->data = nss_ZAlloc(NULL, tmp.len);
+    if (der->data) {
+	rv = SECSuccess;
+	memcpy(der->data, tmp.data, tmp.len);
+	der->len = tmp.len;
+    }
+    SECITEM_FreeItem(&tmp, PR_FALSE);
+    return rv;
+}
+
 int
 ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		int *cipher, char **ivstring, PRBool certsonly)
 {
     SECStatus rv;
     PRFileDesc *inFile;
-    int count = 0, size = 0;
+    int count = 0;
     SECItem *der = NULL;
     int error;
     SECItem filedata;
     char *c, *iv;
+
+    filedata.data = NULL;
 
     inFile = PR_Open(filename, PR_RDONLY, 0);
     if (!inFile)
@@ -203,14 +224,14 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 				goto loser;
 			    *body = '\0';
 			    body++;
-			    *ivstring = strdup(iv);
+			    *ivstring = PORT_Strdup(iv);
 			}
 		    } else {	/* Else the private key is not encrypted */
 			*cipher = 0;
 			body = c;
 		    }
 		}
-		der = (SECItem *) malloc(sizeof(SECItem));
+		der = nss_ZAlloc(NULL, sizeof(SECItem));
                 if (der == NULL)
                     goto loser;
 
@@ -226,36 +247,41 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		    asc = trailer + 1;
 		    *trailer = '\0';
 		} else {
-		    free(der);
 		    goto loser;
 		}
 
 		/* Convert to binary */
-		rv = ATOB_ConvertAsciiToItem(der, body);
+		rv = ConvertAsciiToZAllocItem(der, body);
 		if (rv) {
-                    free(der);
 		    goto loser;
 		}
                 if ((certsonly && !key) || (!certsonly && key)) {
-		    PUT_Object(der, error);
+		    error = put_object(der, derlist, &count);
+		    if (error) {
+			goto loser;
+		    }
+		    der = NULL;
                 } else {
-                    free(der->data);
-                    free(der);
+                    nss_ZFreeIf(der->data);
+                    nss_ZFreeIf(der);
+		    der = NULL;
                 }
 	    }			/* while */
 	} else {		/* No headers and footers, translate the blob */
-	    der = (SECItem *) malloc(sizeof(SECItem));
+	    der = nss_ZAlloc(NULL, sizeof(SECItem));
 	    if (der == NULL)
 		goto loser;
 
-	    rv = ATOB_ConvertAsciiToItem(der, asc);
+	    rv = ConvertAsciiToZAllocItem(der, asc);
 	    if (rv) {
-		free(der);
 		goto loser;
 	    }
-
 	    /* NOTE: This code path has never been tested. */
-	    PUT_Object(der, error);
+	    error = put_object(der, derlist, &count);
+	    if (error) {
+		goto loser;
+	    }
+	    der = NULL;
 	}
 
 	nss_ZFreeIf(filedata.data);
@@ -273,8 +299,11 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     return count;
 
   loser:
-    if (filedata.len > 0)
-	nss_ZFreeIf(filedata.data);
+    nss_ZFreeIf(filedata.data);
+    if (der) {
+	nss_ZFreeIf(der->data);
+	nss_ZFreeIf(der);
+    }
     PR_Close(inFile);
     return -1;
 }
@@ -283,15 +312,17 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 #define LOGGING_BUFFER_SIZE 400
 #define PEM_DEFAULT_LOG_FILE "/tmp/pkcs11.log"
 static const char *pemLogModuleName = "PEM";
-static PRLogModuleInfo* pemLogModule;
+static PRLogModuleInfo* pemLogModule = NULL;
 #endif
 
-void open_log()
+void open_nss_pem_log()
 {
 #ifdef DEBUG
     const char *nsprLogFile = PR_GetEnv("NSPR_LOG_FILE");
 
-    pemLogModule = PR_NewLogModule(pemLogModuleName);
+    if (!pemLogModule) {
+        pemLogModule = PR_NewLogModule(pemLogModuleName);
+    }
 
     (void) PR_SetLogFile(nsprLogFile ? nsprLogFile : PEM_DEFAULT_LOG_FILE);
     /* If false, the log file will remain what it was before */
