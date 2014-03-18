@@ -244,11 +244,11 @@ pem_mdSession_Login
 
     /* Find the right key object */
     for (i = 0; i < pem_nobjs; i++) {
-        if (NULL == gobj[i])
+        if (NULL == pem_objs[i])
             continue;
 
-        if ((slotID == gobj[i]->slotID) && (gobj[i]->type == pemBareKey)) {
-            io = gobj[i];
+        if ((slotID == pem_objs[i]->slotID) && (pem_objs[i]->type == pemBareKey)) {
+            io = pem_objs[i];
             break;
         }
     }

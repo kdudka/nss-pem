@@ -47,7 +47,7 @@
 
 static PRBool pemInitialized = PR_FALSE;
 
-pemInternalObject **gobj;
+pemInternalObject **pem_objs;
 int pem_nobjs = 0;
 int token_needsLogin[NUM_SLOTS];
 
@@ -365,7 +365,7 @@ LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
     int i;
     for (i = 0; i < pem_nobjs; i++) {
         CK_RV rv;
-        pemInternalObject *obj = gobj[i];
+        pemInternalObject *obj = pem_objs[i];
         if (NULL == obj)
             continue;
 
@@ -399,18 +399,18 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
     if (pAdded)
         *pAdded = PR_FALSE;
 
-    /* first look for the object in gobj, it might be already there */
+    /* first look for the object in pem_objs, it might be already there */
     for (i = 0; i < pem_nobjs; i++) {
-        if (NULL == gobj[i])
+        if (NULL == pem_objs[i])
             continue;
 
         /* Comparing DER encodings is dependable and frees the PEM module
          * from having to require clients to provide unique nicknames.
          */
-        if ((gobj[i]->objClass == objClass)
-                && (gobj[i]->type == type)
-                && (gobj[i]->slotID == slotID)
-                && derEncodingsMatch(objClass, gobj[i], certDER, keyDER)) {
+        if ((pem_objs[i]->objClass == objClass)
+                && (pem_objs[i]->type == type)
+                && (pem_objs[i]->slotID == slotID)
+                && derEncodingsMatch(objClass, pem_objs[i], certDER, keyDER)) {
 
             /* While adding a client certificate we (wrongly?) assumed that the
              * key object will follow right after the cert object.  However, if
@@ -420,8 +420,8 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
             LinkSharedKeyObject(pem_nobjs, i);
 
             plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
-            gobj[i]->refCount ++;
-            return gobj[i];
+            pem_objs[i]->refCount ++;
+            return pem_objs[i];
         }
     }
 
@@ -438,17 +438,17 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
 
     /* add object to global array */
     if (count >= size) {
-        gobj = gobj ?
-            nss_ZREALLOCARRAY(gobj, pemInternalObject *,
+        pem_objs = pem_objs ?
+            nss_ZREALLOCARRAY(pem_objs, pemInternalObject *,
                     (size+PEM_ITEM_CHUNK) ) :
             nss_ZNEWARRAY(NULL, pemInternalObject *,
                     (size+PEM_ITEM_CHUNK) ) ;
 
-        if ((pemInternalObject **)NULL == gobj)
+        if ((pemInternalObject **)NULL == pem_objs)
             return NULL;
         size += PEM_ITEM_CHUNK;
     }
-    gobj[count] = io;
+    pem_objs[count] = io;
     count++;
     pem_nobjs++;
 
@@ -650,8 +650,8 @@ pem_Finalize
     if (!pemInitialized)
         return;
 
-    nss_ZFreeIf(gobj);
-    gobj = NULL;
+    nss_ZFreeIf(pem_objs);
+    pem_objs = NULL;
 
     pem_nobjs = 0;
     size = 0;

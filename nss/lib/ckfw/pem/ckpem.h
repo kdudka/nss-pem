@@ -148,7 +148,7 @@ struct pemInternalObjectStr {
   pemObjectListItem *list;
 };
 
-NSS_EXTERN_DATA pemInternalObject **gobj;
+NSS_EXTERN_DATA pemInternalObject **pem_objs;
 NSS_EXTERN_DATA int pem_nobjs;
 NSS_EXTERN_DATA int token_needsLogin[];
 

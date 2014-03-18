@@ -295,20 +295,20 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     /* find objects */
     for (i = 0; i < pem_nobjs; i++) {
         int match = 1; /* matches type if type not specified */
-        if (NULL == gobj[i])
+        if (NULL == pem_objs[i])
             continue;
 
-        plog("  %d type = %d\n", i, gobj[i]->type);
+        plog("  %d type = %d\n", i, pem_objs[i]->type);
         if (type != pemAll) {
             /* type specified - must match given type */
-            match = (type == gobj[i]->type);
+            match = (type == pem_objs[i]->type);
         }
         if (match) {
-            match = (slotID == gobj[i]->slotID) &&
-                (CK_TRUE == pem_match(pTemplate, ulAttributeCount, gobj[i]));
+            match = (slotID == pem_objs[i]->slotID) &&
+                (CK_TRUE == pem_match(pTemplate, ulAttributeCount, pem_objs[i]));
         }
         if (match) {
-            pemInternalObject *o = gobj[i];
+            pemInternalObject *o = pem_objs[i];
             PUT_Object(o, *pError);
         }
     }

@@ -627,9 +627,9 @@ pem_DestroyInternalObject
         break;
     }
 
-    if (NULL != gobj)
+    if (NULL != pem_objs)
         /* remove reference to self from the global array */
-        gobj[io->gobjIndex] = NULL;
+        pem_objs[io->gobjIndex] = NULL;
 
     nss_ZFreeIf(io);
     return;
@@ -1168,20 +1168,20 @@ pem_CreateObject
 
         objid = -1;
         for (i = 0; i < pem_nobjs; i++) {
-            if (NULL == gobj[i])
+            if (NULL == pem_objs[i])
                 continue;
 
-            if ((slotID == gobj[i]->slotID) && (gobj[i]->type == pemCert)) {
-                objid = atoi(gobj[i]->id.data);
+            if ((slotID == pem_objs[i]->slotID) && (pem_objs[i]->type == pemCert)) {
+                objid = atoi(pem_objs[i]->id.data);
                 certDER.data =
-                    (void *) nss_ZAlloc(NULL, gobj[i]->derCert->len);
+                    (void *) nss_ZAlloc(NULL, pem_objs[i]->derCert->len);
 
                 if (certDER.data == NULL)
                     goto loser;
 
-                certDER.len = gobj[i]->derCert->len;
-                nsslibc_memcpy(certDER.data, gobj[i]->derCert->data,
-                               gobj[i]->derCert->len);
+                certDER.len = pem_objs[i]->derCert->len;
+                nsslibc_memcpy(certDER.data, pem_objs[i]->derCert->data,
+                               pem_objs[i]->derCert->len);
             }
         }
 
