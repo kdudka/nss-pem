@@ -51,11 +51,6 @@ pemInternalObject **pem_objs;
 int pem_nobjs = 0;
 int token_needsLogin[NUM_SLOTS];
 
-PRInt32 size = 0;
-PRInt32 count = 0;
-
-#define PEM_ITEM_CHUNK  512
-
 /*
  * simple cert decoder to avoid the cost of asn1 engine
  */
@@ -434,22 +429,16 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
     /* initialize pointers to functions */
     pem_CreateMDObject(NULL, io, NULL);
 
-    io->gobjIndex = count;
+    io->gobjIndex = pem_nobjs;
 
     /* add object to global array */
-    if (count >= size) {
-        pem_objs = pem_objs ?
-            nss_ZREALLOCARRAY(pem_objs, pemInternalObject *,
-                    (size+PEM_ITEM_CHUNK) ) :
-            nss_ZNEWARRAY(NULL, pemInternalObject *,
-                    (size+PEM_ITEM_CHUNK) ) ;
-
-        if ((pemInternalObject **)NULL == pem_objs)
-            return NULL;
-        size += PEM_ITEM_CHUNK;
-    }
-    pem_objs[count] = io;
-    count++;
+    if (pem_objs)
+        pem_objs = nss_ZREALLOCARRAY(pem_objs, pemInternalObject *, pem_nobjs+1);
+    else
+        pem_objs = nss_ZNEWARRAY(NULL, pemInternalObject *, 1);
+    if (!pem_objs)
+        return NULL;
+    pem_objs[pem_nobjs] = io;
     pem_nobjs++;
 
     if (pAdded)
@@ -652,14 +641,9 @@ pem_Finalize
 
     nss_ZFreeIf(pem_objs);
     pem_objs = NULL;
-
     pem_nobjs = 0;
-    size = 0;
-    count = 0;
 
     PR_AtomicSet(&pemInitialized, PR_FALSE);
-
-    return;
 }
 
 /*
