@@ -228,6 +228,10 @@ CreateObject(CK_OBJECT_CLASS objClass,
     case CKO_PRIVATE_KEY:
         plog("Creating key id %d in slot %ld\n", objid, slotID);
         memset(&o->u.key, 0, sizeof(o->u.key));
+        /* This assignment was added as a workaround to ensure unique nicknames,
+         * see: https://bugzilla.redhat.com/show_bug.cgi?id=689031#c66
+         */
+        nickname = filename;
         break;
     case CKO_NETSCAPE_TRUST:
         plog("Creating trust nick %s id %d in slot %ld\n", nickname, objid, slotID);
