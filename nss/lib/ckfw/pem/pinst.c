@@ -53,18 +53,18 @@ int token_needsLogin[NUM_SLOTS];
 PLHashTable *nicknameHashTable = NULL;
 
 static void *strcpy_AllocTable(void *pool, PRSize size) {
-    return PORT_Alloc(size);
+    return nss_ZAlloc(NULL, size);
 }
 static void strcpy_FreeTable(void *pool, void *item) {
-    PORT_Free(item);
+    nss_ZFreeIf(item);
 }
 static PLHashEntry* strcpy_AllocEntry(void *pool, const void *key) {
-    return PORT_New(PLHashEntry);
+    return (PLHashEntry*) nss_ZAlloc(NULL, sizeof(PLHashEntry));
 }
 static void strcpy_FreeEntry(void *pool, PLHashEntry *he, PRUintn flag) {
-    PORT_Free(he->value);
+    nss_ZFreeIf(he->value);
     if (flag == HT_FREE_ENTRY) {
-        PORT_Free(he);
+        nss_ZFreeIf(he);
     }
 }
 static PLHashAllocOps strcpy_AllocOps = {
