@@ -144,7 +144,7 @@ static const NSSItem pem_falseItem = {
     (void *) &ck_false, (PRUint32) sizeof(CK_BBOOL)
 };
 static const NSSItem pem_x509Item = {
-    (void *) &ckc_x509, (PRUint32) sizeof(CK_ULONG)
+    (void *) &ckc_x509, (PRUint32) sizeof(CK_CERTIFICATE_TYPE)
 };
 static const NSSItem pem_rsaItem = {
     (void *) &ckk_rsa, (PRUint32) sizeof(CK_KEY_TYPE)
@@ -1124,31 +1124,34 @@ pem_CreateObject
             /* Add the certificate. There may be more than one */
             int c;
             for (c = 0; c < nobjs; c++) {
-                char nickname[1024];
+                char *nickname;
                 objid = pem_nobjs + 1;
 
-                snprintf(nickname, 1024, "%s - %d", filename, c);
+                nickname = getUniquePEMNicknameFromFilename(filename, c);
 
-                if (c)
+                if (c) {
                     APPEND_LIST_ITEM(listItem);
+                }
                 listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
                                                  derlist[c], NULL, nickname, 0,
                                                  slotID, NULL);
-                if (listItem->io == NULL)
-                    goto loser;
-
-                /* Add the trust object */
-                APPEND_LIST_ITEM(listItem);
-                listItem->io = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust,
-                                                 derlist[c], NULL, nickname, 0,
-                                                 slotID, NULL);
+                if (listItem->io != NULL) {
+                    /* Add the trust object */
+                    APPEND_LIST_ITEM(listItem);
+                    listItem->io = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust,
+                                                    derlist[c], NULL, nickname, 0,
+                                                     slotID, NULL);
+                }
+                nss_ZFreeIf(nickname);
                 if (listItem->io == NULL)
                     goto loser;
             }
         } else {
+            char *nickname = getUniquePEMNicknameFromFilename(filename, 0);
             listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
-                                             derlist[0], NULL, filename, objid,
+                                             derlist[0], NULL, nickname, objid,
                                              slotID, NULL);
+            nss_ZFreeIf(nickname);
             if (listItem->io == NULL)
                 goto loser;
         }
@@ -1158,6 +1161,7 @@ pem_CreateObject
         SECItem certDER;
         CK_SESSION_HANDLE hSession;
         PRBool added;
+        char *nickname;
 
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_FALSE /* keys only */);
         if (nobjs < 1)
@@ -1189,9 +1193,11 @@ pem_CreateObject
         if (objid == -1)
             objid = pem_nobjs + 1;
 
+        nickname = getUniquePEMNicknameFromFilename(filename, 0);
         listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
-                                          derlist[0], filename, objid, slotID,
+                                          derlist[0], nickname, objid, slotID,
                                           &added);
+        nss_ZFreeIf(nickname);
         if (listItem->io == NULL)
             goto loser;
 

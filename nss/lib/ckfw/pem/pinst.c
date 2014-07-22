@@ -50,6 +50,102 @@ static PRBool pemInitialized = PR_FALSE;
 pemInternalObject **pem_objs;
 int pem_nobjs = 0;
 int token_needsLogin[NUM_SLOTS];
+PLHashTable *nicknameHashTable = NULL;
+
+static void *strcpy_AllocTable(void *pool, PRSize size) {
+    return PORT_Alloc(size);
+}
+static void strcpy_FreeTable(void *pool, void *item) {
+    PORT_Free(item);
+}
+static PLHashEntry* strcpy_AllocEntry(void *pool, const void *key) {
+    return PORT_New(PLHashEntry);
+}
+static void strcpy_FreeEntry(void *pool, PLHashEntry *he, PRUintn flag) {
+    PORT_Free(he->value);
+    if (flag == HT_FREE_ENTRY) {
+        PORT_Free(he);
+    }
+}
+static PLHashAllocOps strcpy_AllocOps = {
+    strcpy_AllocTable, strcpy_FreeTable, strcpy_AllocEntry, strcpy_FreeEntry
+};
+
+void releasePEMNickname(char *nickname)
+{
+    if (nickname) {
+        PL_HashTableRemove(nicknameHashTable, nickname);
+    }
+}
+
+/* Function takes a filename, will use the base name (without directory),
+ * and append numbers until a unique nickname is found (or until we give up).
+ * The caller owns the returned nickname, which should be destroyed
+ * using nss_ZFreeIf().
+ * In addition, once the object associated to the nickname is freed,
+ * the nickname should be released using releasePEMNickname(),
+ * in order to remove the entry from the hashtable of unique nicknames.
+ * Caller may provide an optional nonzero numeric parameter that will be used
+ * as a starting point when creating the suffix. */
+char *getUniquePEMNicknameFromFilename(const char *filename, int start_suffix)
+{
+    const char *basename;
+    size_t len_basename;
+
+    char *returned_name = NULL;
+    const int max_conflict_resolution_attempts = 999999999;
+    const size_t max_digits_for_conflict_resolution = 9;
+    int conflict_suffix = 0;
+
+    if (!filename)
+        return NULL;
+
+    if (start_suffix < 0 || start_suffix > max_conflict_resolution_attempts)
+        start_suffix = 0;
+
+    conflict_suffix = start_suffix;
+
+    basename = strrchr(filename, PR_GetDirectorySeparator());
+    if (basename)
+        basename++;
+    else
+        basename = filename;
+
+    len_basename = strlen(basename);
+    if (!len_basename) {
+        return NULL;
+    }
+
+    returned_name = (char *) nss_ZAlloc(NULL,
+                        len_basename + max_digits_for_conflict_resolution + 1);
+    if (!returned_name)
+        return NULL;
+
+    strcpy(returned_name, basename);
+    /* snprintf won't write a zero terminator if it's using the max length */
+    returned_name[len_basename + max_digits_for_conflict_resolution] = '\0';
+    do {
+        /* Skip suffix "0". */
+        if (conflict_suffix > 0) {
+            snprintf(returned_name + len_basename,
+                     max_digits_for_conflict_resolution,
+                     "%d", conflict_suffix);
+        }
+
+        if (PL_HashTableLookup(nicknameHashTable, returned_name) == NULL) {
+            /* no entry found for this name, good to use */
+            /* Our hashtable's strcpy_AllocOps will PORT_Free the value */
+            char *copy_for_hashtable = PORT_Strdup(returned_name);
+            PL_HashTableAdd(nicknameHashTable, copy_for_hashtable, copy_for_hashtable);
+
+            return returned_name;
+        }
+
+    } while (++conflict_suffix <= max_conflict_resolution_attempts);
+
+    nss_ZFreeIf(returned_name);
+    return NULL;
+}
 
 /*
  * simple cert decoder to avoid the cost of asn1 engine
@@ -197,7 +293,7 @@ assignObjectID(pemInternalObject *o, int objid)
 static pemInternalObject *
 CreateObject(CK_OBJECT_CLASS objClass,
              pemObjectType type, SECItem * certDER,
-             SECItem * keyDER, char *filename,
+             SECItem * keyDER, const char *nickname,
              int objid, CK_SLOT_ID slotID)
 {
     pemInternalObject *o;
@@ -207,18 +303,11 @@ CreateObject(CK_OBJECT_CLASS objClass,
     SECItem derSN;
     SECItem valid;
     SECItem subjkey;
-    char *nickname;
 
     o = nss_ZNEW(NULL, pemInternalObject);
     if ((pemInternalObject *) NULL == o) {
         return NULL;
     }
-
-    nickname = strrchr(filename, '/');
-    if (nickname)
-        nickname++;
-    else
-        nickname = filename;
 
     switch (objClass) {
     case CKO_CERTIFICATE:
@@ -228,10 +317,6 @@ CreateObject(CK_OBJECT_CLASS objClass,
     case CKO_PRIVATE_KEY:
         plog("Creating key id %d in slot %ld\n", objid, slotID);
         memset(&o->u.key, 0, sizeof(o->u.key));
-        /* This assignment was added as a workaround to ensure unique nicknames,
-         * see: https://bugzilla.redhat.com/show_bug.cgi?id=689031#c66
-         */
-        nickname = filename;
         break;
     case CKO_NETSCAPE_TRUST:
         plog("Creating trust nick %s id %d in slot %ld\n", nickname, objid, slotID);
@@ -383,17 +468,10 @@ LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                   pemObjectType type, SECItem * certDER,
-                  SECItem * keyDER, char *filename,
+                  SECItem * keyDER, const char *nickname,
                   int objid, CK_SLOT_ID slotID, PRBool *pAdded)
 {
     int i;
-
-    /* FIXME: copy-pasted from CreateObject */
-    const char *nickname = strrchr(filename, '/');
-    if (nickname && CKO_PRIVATE_KEY != objClass)
-        nickname++;
-    else
-        nickname = filename;
 
     if (pAdded)
         *pAdded = PR_FALSE;
@@ -426,7 +504,7 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
 
     /* object not found, we need to create it */
     pemInternalObject *io = CreateObject(objClass, type, certDER, keyDER,
-                                         filename, objid, slotID);
+                                         nickname, objid, slotID);
     if (io == NULL)
         return NULL;
 
@@ -463,6 +541,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     SECItem **objs = NULL;
     char *ivstring = NULL;
     int cipher;
+    char *nickname = NULL;
 
     nobjs = ReadDERFromFile(&objs, certfile, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
     if (nobjs <= 0) {
@@ -473,62 +552,65 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     /* For now load as many certs as are in the file for CAs only */
     if (cacert) {
         for (i = 0; i < nobjs; i++) {
-            char nickname[1024];
             objid = pem_nobjs + 1;
 
-            snprintf(nickname, 1024, "%s - %d", certfile, i);
+            nickname = getUniquePEMNicknameFromFilename(certfile, i);
 
             o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[i], NULL,
                                    nickname, 0, slotID, NULL);
-            if (o == NULL) {
-                error = CKR_GENERAL_ERROR;
-                goto loser;
+            if (o != NULL) {
+                /* Add the CA trust object */
+                o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
+                                       nickname, 0, slotID, NULL);
             }
-
-            /* Add the CA trust object */
-            o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
-                                   nickname, 0, slotID, NULL);
+            nss_ZFreeIf(nickname);
+            nickname = NULL;
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
                 goto loser;
             }
         }                       /* for */
     } else {
+        PRBool found_error = PR_FALSE;
+
         objid = pem_nobjs + 1;
-        o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[0], NULL, certfile,
+
+        nickname = getUniquePEMNicknameFromFilename(certfile, i);
+
+        o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[0], NULL, nickname,
                               objid, slotID, NULL);
-        if (o == NULL) {
-            error = CKR_GENERAL_ERROR;
-            goto loser;
-        }
 
-        o = NULL;
-
-        if (keyfile) {          /* add the private key */
+        if (o != NULL && keyfile != NULL) { /* add the private key */
             SECItem **keyobjs = NULL;
             int kobjs = 0;
             kobjs =
                 ReadDERFromFile(&keyobjs, keyfile, PR_TRUE, &cipher,
                                 &ivstring, PR_FALSE);
             if (kobjs < 1) {
-                error = CKR_GENERAL_ERROR;
-                goto loser;
+                found_error = PR_TRUE;
+            } else {
+                o = AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, objs[0],
+                                      keyobjs[0], nickname, objid, slotID, NULL);
             }
-            o = AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, objs[0],
-                                  keyobjs[0], certfile, objid, slotID, NULL);
-            if (o == NULL) {
-                error = CKR_GENERAL_ERROR;
-                goto loser;
-            }
+        }
+
+        nss_ZFreeIf(nickname);
+        nickname = NULL;
+
+        if (found_error || o == NULL) {
+            error = CKR_GENERAL_ERROR;
+            goto loser;
         }
     }
 
+    nss_ZFreeIf(nickname);
     nss_ZFreeIf(objs);
     return CKR_OK;
 
   loser:
     nss_ZFreeIf(objs);
     nss_ZFreeIf(o);
+    nss_ZFreeIf(nickname);
     return error;
 }
 
@@ -567,9 +649,16 @@ pem_Initialize
 
     plog("pem_Initialize\n");
 
+    nicknameHashTable = PL_NewHashTable(0, PL_HashString, PL_CompareStrings,
+                                        PL_CompareStrings, &strcpy_AllocOps, NULL);
+    if (!nicknameHashTable) {
+        return CKR_HOST_MEMORY;
+    }
+
     if (!modArgs || !modArgs->LibraryParameters) {
         goto done;
     }
+
     modparms = (char *) modArgs->LibraryParameters;
     plog("Initialized with %s\n", modparms);
 
@@ -646,6 +735,8 @@ pem_Finalize
     nss_ZFreeIf(pem_objs);
     pem_objs = NULL;
     pem_nobjs = 0;
+    if (nicknameHashTable)
+        PL_HashTableDestroy(nicknameHashTable);
 
     PR_AtomicSet(&pemInitialized, PR_FALSE);
 }
