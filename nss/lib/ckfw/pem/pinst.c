@@ -555,6 +555,10 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
             objid = pem_nobjs + 1;
 
             nickname = getUniquePEMNicknameFromFilename(certfile, i);
+            if (!nickname) {
+                error = CKR_GENERAL_ERROR;
+                goto loser;
+            }
 
             o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[i], NULL,
                                    nickname, 0, slotID, NULL);
@@ -576,6 +580,10 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
         objid = pem_nobjs + 1;
 
         nickname = getUniquePEMNicknameFromFilename(certfile, i);
+        if (!nickname) {
+            error = CKR_GENERAL_ERROR;
+            goto loser;
+        }
 
         o = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert, objs[0], NULL, nickname,
                               objid, slotID, NULL);

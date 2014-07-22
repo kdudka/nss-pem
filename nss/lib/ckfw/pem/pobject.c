@@ -1128,6 +1128,9 @@ pem_CreateObject
                 objid = pem_nobjs + 1;
 
                 nickname = getUniquePEMNicknameFromFilename(filename, c);
+                if (!nickname) {
+                    goto loser;
+                }
 
                 if (c) {
                     APPEND_LIST_ITEM(listItem);
@@ -1148,6 +1151,10 @@ pem_CreateObject
             }
         } else {
             char *nickname = getUniquePEMNicknameFromFilename(filename, 0);
+            if (!nickname) {
+                goto loser;
+            }
+
             listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
                                              derlist[0], NULL, nickname, objid,
                                              slotID, NULL);
@@ -1194,6 +1201,10 @@ pem_CreateObject
             objid = pem_nobjs + 1;
 
         nickname = getUniquePEMNicknameFromFilename(filename, 0);
+        if (!nickname) {
+            goto loser;
+        }
+
         listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
                                           derlist[0], nickname, objid, slotID,
                                           &added);
