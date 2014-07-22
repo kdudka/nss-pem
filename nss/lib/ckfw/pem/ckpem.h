@@ -238,10 +238,26 @@ NSSCKMDObject * pem_CreateObject(NSSCKFWInstance *fwInstance, NSSCKFWSession *fw
 /* Create a new pem module slot */
 NSSCKMDSlot *pem_NewSlot( NSSCKFWInstance *fwInstance, CK_RV *pError);
 
+typedef void* (*DynPtrListAllocFunction) (size_t bytes);
+typedef void* (*DynPtrListReallocFunction) (void *ptr, size_t bytes);
+typedef void (*DynPtrListFreeFunction) (void *ptr);
 
-PRBool pem_ParseString(const char* inputstring, const char delimiter,
-                       PRInt32* numStrings, char*** returnedstrings);
-PRBool pem_FreeParsedStrings(PRInt32 numStrings, char** instrings);
+typedef struct DynPtrListStr {
+    size_t entries;
+    size_t capacity;
+    void **pointers;
+    DynPtrListAllocFunction alloc_function;
+    DynPtrListReallocFunction realloc_function;
+    DynPtrListFreeFunction free_function;
+} DynPtrList;
+
+void* pem_InitDynPtrList(DynPtrList *dpl, DynPtrListAllocFunction a,
+                         DynPtrListReallocFunction r, DynPtrListFreeFunction f);
+void pem_FreeDynPtrList(DynPtrList *dpl);
+void* pem_AddToDynPtrList(DynPtrList *dpl, char *ptr);
+
+PRBool pem_ParseString(const char *inputstring, const char delimiter,
+                       DynPtrList *returnedstrings);
 
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass, pemObjectType type,

@@ -39,6 +39,7 @@
 #include <nspr.h>
 #include <secport.h>
 #include <base.h>
+#include "ckpem.h"
 
 /*
  * Returns a pointer to a new string, which is a duplicate of the string (subset)
@@ -68,52 +69,18 @@ pem_StrNdup(const char *instr, PRInt32 inlen)
     return buffer;
 }
 
-/*
-** Add newstring to the list of strings.
-** Returns the new string count. If the count didn't increase,
-** it indicates a failure to allocate memory.
-*/
-static PRInt32
-addString(char ***returnedstrings, char *newstring, PRInt32 stringcount)
-{
-    if (!returnedstrings || !newstring) {
-        return stringcount;
-    }
-    if (!stringcount) {
-        /* first string to be added, allocate buffer */
-        *returnedstrings = (char **) nss_ZNEWARRAY(NULL, char*, 1);
-        if (!*returnedstrings) {
-            /* failure, caller still owns newstring */
-            return 0;
-        }
-    } else {
-        char **stringarray = NULL;
-        stringarray = (char **)
-                nss_ZREALLOCARRAY(*returnedstrings, char*, (stringcount + 1));
-        if (!stringarray) {
-            return stringcount;
-        }
-        *returnedstrings = stringarray;
-     }
-
-    (*returnedstrings)[stringcount] = newstring;
-    return stringcount+1;
-}
-
 PRBool
 pem_ParseString(const char *inputstring, const char delimiter,
-                PRInt32 * numStrings, char ***returnedstrings)
+                DynPtrList *returnedstrings)
 {
-    if (!inputstring || !delimiter || !numStrings || !returnedstrings) {
+    if (!inputstring || !delimiter || !returnedstrings) {
         /* we need a string and a non-zero delimiter, as well as
-         * a valid place to return the strings and count
+         * a valid place to return the strings
          */
         return PR_FALSE;
     }
     char nextchar;
     char *instring = (char *) inputstring;
-    *numStrings = 0;
-    *returnedstrings = NULL;
 
     while ((nextchar = *instring)) {
         unsigned long len = 0;
@@ -129,7 +96,9 @@ pem_ParseString(const char *inputstring, const char delimiter,
         if (len > 0) {
             char *newstring = pem_StrNdup(instring, len);
 
-            addString(returnedstrings, newstring, (*numStrings)++);
+            if (pem_AddToDynPtrList(returnedstrings, newstring) != newstring) {
+                return PR_FALSE;
+            }
 
             instring += len;
         }
@@ -141,16 +110,3 @@ pem_ParseString(const char *inputstring, const char delimiter,
     return PR_TRUE;
 }
 
-PRBool pem_FreeParsedStrings(PRInt32 numStrings, char **instrings)
-{
-    if (!numStrings || !instrings) {
-        return PR_FALSE;
-    }
-    PRInt32 counter;
-    for (counter = 0; counter < numStrings; counter++) {
-        char *astring = instrings[counter];
-        nss_ZFreeIf(astring);
-    }
-    nss_ZFreeIf(instrings);
-    return PR_TRUE;
-}

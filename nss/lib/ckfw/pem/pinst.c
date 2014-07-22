@@ -622,6 +622,100 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     return error;
 }
 
+#define DynPtrList_default_capacity 4
+#define DynPtrList_default_realloc_factor 2
+
+static void*
+myDynPtrListAllocWrapper(size_t bytes)
+{
+    return nss_ZAlloc(NULL, bytes);
+}
+
+static void*
+myDynPtrListReallocWrapper(void *ptr, size_t bytes)
+{
+    return nss_ZRealloc(ptr, bytes);
+}
+
+static void
+myDynPtrListFreeWrapper(void *ptr)
+{
+    nss_ZFreeIf(ptr);
+}
+
+/* returns NULL on failure. returns dpl if init was successful. */
+void*
+pem_InitDynPtrList(DynPtrList *dpl, DynPtrListAllocFunction a,
+                  DynPtrListReallocFunction r, DynPtrListFreeFunction f)
+{
+    if (!dpl)
+        return NULL;
+
+    dpl->entries = 0;
+    dpl->capacity = DynPtrList_default_capacity;
+
+    dpl->alloc_function = a;
+    dpl->realloc_function = r;
+    dpl->free_function = f;
+
+    dpl->pointers = (*dpl->alloc_function)(dpl->capacity * sizeof(void*));
+    if (!dpl->pointers)
+        return NULL;
+
+    return dpl;
+}
+
+void
+pem_FreeDynPtrList(DynPtrList *dpl)
+{
+    size_t i;
+    for (i = 0; i < dpl->entries; ++i) {
+        (*dpl->free_function)(dpl->pointers[i]);
+    }
+    nss_ZFreeIf(dpl->pointers);
+    dpl->pointers = NULL;
+    dpl->capacity = 0;
+    dpl->entries = 0;
+}
+
+/* returns NULL on failure. Returns str if it could be added.*/
+void*
+pem_AddToDynPtrList(DynPtrList *dpl, char *ptr)
+{
+    const size_t max_size_t = ((size_t) -1);
+
+    if (!dpl->capacity)
+        return NULL; /* dpl not initialized */
+
+    if (dpl->capacity == dpl->entries) {
+        /* capacity reached, must grow */
+        void **new_pointers = NULL;
+        size_t new_capacity;
+
+        if ( (((double)max_size_t) / dpl->capacity) < DynPtrList_default_realloc_factor) {
+            new_capacity = max_size_t;
+        } else {
+            new_capacity = dpl->capacity * DynPtrList_default_realloc_factor;
+        }
+
+        if (dpl->capacity == new_capacity) {
+            return NULL; /* cannot grow */
+        }
+
+        new_pointers = (*dpl->realloc_function)(dpl->pointers, new_capacity);
+        if (new_pointers == dpl->pointers) {
+            return NULL; /* cannot grow */
+        }
+
+        dpl->pointers = new_pointers;
+        dpl->capacity = new_capacity;
+    }
+
+    dpl->pointers[dpl->entries] = ptr;
+    ++dpl->entries;
+    return ptr;
+}
+
 CK_RV
 pem_Initialize
 (
@@ -632,9 +726,8 @@ pem_Initialize
 {
     CK_RV rv;
     /* parse the initialization string */
-    char **certstrings = NULL;
     char *modparms = NULL;
-    PRInt32 numcerts = 0;
+    DynPtrList certstrings;
     PRBool status, error = PR_FALSE;
     int i;
     CK_C_INITIALIZE_ARGS_PTR modArgs = NULL;
@@ -682,38 +775,40 @@ pem_Initialize
      *  /etc/certs/server.pem;/etc/certs/server.key /etc/certs/ca.pem
      *
      */
-    status =
-        pem_ParseString(modparms, ' ', &numcerts,
-                        &certstrings);
+    pem_InitDynPtrList(&certstrings, myDynPtrListAllocWrapper,
+                      myDynPtrListReallocWrapper, myDynPtrListFreeWrapper);
+    status = pem_ParseString(modparms, ' ', &certstrings);
     if (status == PR_FALSE) {
         return CKR_ARGUMENTS_BAD;
     }
 
-    for (i = 0; i < numcerts && error != PR_TRUE; i++) {
-        char *cert = certstrings[i];
-        PRInt32 attrcount = 0;
-        char **certattrs = NULL;
-        status = pem_ParseString(cert, ';', &attrcount, &certattrs);
+    for (i = 0; i < certstrings.entries && error != PR_TRUE; i++) {
+        char *cert = (char*)certstrings.pointers[i];
+        DynPtrList certattrs;
+
+        pem_InitDynPtrList(&certattrs, myDynPtrListAllocWrapper,
+                          myDynPtrListReallocWrapper, myDynPtrListFreeWrapper);
+        status = pem_ParseString(cert, ';', &certattrs);
         if (status == PR_FALSE) {
             error = PR_TRUE;
             break;
         }
 
         if (error == PR_FALSE) {
-            if (attrcount == 1) /* CA certificate */
-                rv = AddCertificate(certattrs[0], NULL, PR_TRUE, i);
+            if (certattrs.entries == 1) /* CA certificate */
+                rv = AddCertificate(certattrs.pointers[0], NULL, PR_TRUE, i);
             else
-                rv = AddCertificate(certattrs[0], certattrs[1], PR_FALSE,
-                                    i);
+                rv = AddCertificate(certattrs.pointers[0], certattrs.pointers[1],
+                                    PR_FALSE, i);
 
             if (rv != CKR_OK) {
                 error = PR_TRUE;
                 status = PR_FALSE;
             }
         }
-        pem_FreeParsedStrings(attrcount, certattrs);
+        pem_FreeDynPtrList(&certattrs);
     }
-    pem_FreeParsedStrings(numcerts, certstrings);
+    pem_FreeDynPtrList(&certstrings);
 
     if (status == PR_FALSE) {
         return CKR_ARGUMENTS_BAD;
