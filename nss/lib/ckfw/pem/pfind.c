@@ -51,8 +51,6 @@ struct pemFOStr {
     pemInternalObject **objs;
 };
 
-#define PEM_ITEM_CHUNK  512
-
 static void
 pem_mdFindObjects_Final
 (
@@ -218,15 +216,40 @@ pem_GetObjectClass(CK_ATTRIBUTE_PTR pTemplate,
     return CK_INVALID_HANDLE;
 }
 
+static void *
+ensure_array_capacity(void *array,
+                      size_t *current_items_capacity,
+                      const size_t required_items_capacity,
+                      const size_t sizeof_one_item,
+                      const size_t resize_add_number_of_items)
+{
+    if (required_items_capacity <= *current_items_capacity) {
+        return array;
+    } else {
+        void *new_array;
+        size_t new_size_in_bytes =
+            sizeof_one_item * ((*current_items_capacity)+resize_add_number_of_items);
+        if (array) {
+            PORT_Assert(*current_items_capacity > 0);
+            new_array = nss_ZRealloc(array, new_size_in_bytes);
+        } else {
+            PORT_Assert(*current_items_capacity == 0);
+            new_array = nss_ZAlloc(NULL, new_size_in_bytes);
+        }
+        (*current_items_capacity) += resize_add_number_of_items;
+        return new_array;
+    }
+}
+
 static PRUint32
 collect_objects(CK_ATTRIBUTE_PTR pTemplate,
                 CK_ULONG ulAttributeCount,
-                pemInternalObject *** listp,
+                pemInternalObject *** result_array,
                 CK_RV * pError, CK_SLOT_ID slotID)
 {
     PRUint32 i;
-    PRUint32 count = 0;
-    PRUint32 size = 0;
+    size_t result_array_entries = 0;
+    size_t result_array_capacity = 0;
     pemObjectType type = pemRaw;
     CK_OBJECT_CLASS objClass = pem_GetObjectClass(pTemplate, ulAttributeCount);
 
@@ -291,20 +314,21 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
         }
         if (match) {
             pemInternalObject *o = pem_objs[i];
-            if (count >= size) {
-                *listp = *listp ?
-                            nss_ZREALLOCARRAY(*listp, pemInternalObject *,
-                                           (size+PEM_ITEM_CHUNK) ) :
-                            nss_ZNEWARRAY(NULL, pemInternalObject *,
-                                           (size+PEM_ITEM_CHUNK) ) ;
-                if ((pemInternalObject **)NULL == *listp) {
-                    *pError = CKR_HOST_MEMORY;
-                    goto loser;
-                }
-                size += PEM_ITEM_CHUNK;
+            pemInternalObject **new_result_array = (pemInternalObject **)
+                ensure_array_capacity(*result_array,
+                                      &result_array_capacity,
+                                      result_array_entries+1,
+                                      sizeof(pemInternalObject *),
+                                      512 /*add number of items per resize*/);
+            if (!new_result_array) {
+                *pError = CKR_HOST_MEMORY;
+                goto loser;
             }
-            (*listp)[ count ] = (o);
-            count++;
+            if (*result_array != new_result_array) {
+                *result_array = new_result_array;
+            }
+            (*result_array)[ result_array_entries ] = o;
+            result_array_entries++;
         }
     }
 
@@ -313,10 +337,10 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     }
 
   done:
-    plog("collect_objects: Found %d\n", count);
-    return count;
+    plog("collect_objects: Found %d\n", result_array_entries);
+    return result_array_entries;
   loser:
-    nss_ZFreeIf(*listp);
+    nss_ZFreeIf(*result_array);
     return 0;
 
 }
