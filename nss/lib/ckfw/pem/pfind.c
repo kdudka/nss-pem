@@ -53,24 +53,6 @@ struct pemFOStr {
 
 #define PEM_ITEM_CHUNK  512
 
-#define PUT_Object(obj,err) \
-  { \
-    if (count >= size) { \
-    *listp = *listp ? \
-                nss_ZREALLOCARRAY(*listp, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) : \
-                nss_ZNEWARRAY(NULL, pemInternalObject *, \
-                               (size+PEM_ITEM_CHUNK) ) ; \
-      if ((pemInternalObject **)NULL == *listp) { \
-        err = CKR_HOST_MEMORY; \
-        goto loser; \
-      } \
-      size += PEM_ITEM_CHUNK; \
-    } \
-    (*listp)[ count ] = (obj); \
-    count++; \
-  }
-
 static void
 pem_mdFindObjects_Final
 (
@@ -309,7 +291,20 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
         }
         if (match) {
             pemInternalObject *o = pem_objs[i];
-            PUT_Object(o, *pError);
+            if (count >= size) {
+                *listp = *listp ?
+                            nss_ZREALLOCARRAY(*listp, pemInternalObject *,
+                                           (size+PEM_ITEM_CHUNK) ) :
+                            nss_ZNEWARRAY(NULL, pemInternalObject *,
+                                           (size+PEM_ITEM_CHUNK) ) ;
+                if ((pemInternalObject **)NULL == *listp) {
+                    *pError = CKR_HOST_MEMORY;
+                    goto loser;
+                }
+                size += PEM_ITEM_CHUNK;
+            }
+            (*listp)[ count ] = (o);
+            count++;
         }
     }
 
