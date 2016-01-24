@@ -44,7 +44,7 @@
 /*
  * psession.c
  *
- * This file implements the NSSCKMDSession object for the 
+ * This file implements the NSSCKMDSession object for the
  * "PEM objects" cryptoki module.
  */
 
@@ -356,8 +356,8 @@ pem_CreateSession
         return (NSSCKMDSession *) NULL;
     }
 
-    /* 
-     * rv was zeroed when allocated, so we only 
+    /*
+     * rv was zeroed when allocated, so we only
      * need to set the non-zero members.
      */
 

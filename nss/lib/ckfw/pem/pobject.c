@@ -926,7 +926,7 @@ pem_GetULongAttribute
     return *(CK_ULONG *) item.data;
 }
 
-/*  
+/*
  * get an attribute which is type CK_BBOOL.
  */
 CK_BBOOL

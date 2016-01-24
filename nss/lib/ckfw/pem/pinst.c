@@ -41,7 +41,7 @@
 /*
  * pinstance.c
  *
- * This file implements the NSSCKMDInstance object for the 
+ * This file implements the NSSCKMDInstance object for the
  * "PEM objects" cryptoki module.
  */
 

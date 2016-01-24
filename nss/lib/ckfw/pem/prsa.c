@@ -64,10 +64,10 @@ const SEC_ASN1Template pem_RSAPrivateKeyTemplate[] = {
 };
 
 static const SEC_ASN1Template pem_AttributeTemplate[] = {
-    { SEC_ASN1_SEQUENCE, 
+    { SEC_ASN1_SEQUENCE,
       0, NULL, sizeof(NSSLOWKEYAttribute) },
     { SEC_ASN1_OBJECT_ID, offsetof(NSSLOWKEYAttribute, attrType) },
-    { SEC_ASN1_SET_OF | SEC_ASN1_XTRN, offsetof(NSSLOWKEYAttribute, attrValue), 
+    { SEC_ASN1_SET_OF | SEC_ASN1_XTRN, offsetof(NSSLOWKEYAttribute, attrValue),
       SEC_ASN1_SUB(SEC_AnyTemplate) },
     { 0 }
 };
@@ -160,7 +160,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         return NULL; /* wha???? */
     }
 
-    pki = (NSSLOWKEYPrivateKeyInfo*)PORT_ArenaZAlloc(arena, 
+    pki = (NSSLOWKEYPrivateKeyInfo*)PORT_ArenaZAlloc(arena,
                                                      sizeof(NSSLOWKEYPrivateKeyInfo));
     if(!pki) {
         *pError = CKR_HOST_MEMORY;
@@ -173,7 +173,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         /* not PKCS#8 - assume it's a "raw" RSA private key */
         keysrc = rawkey;
     } else if (SECOID_GetAlgorithmTag(&pki->algorithm) == SEC_OID_PKCS1_RSA_ENCRYPTION) {
-        keysrc = &pki->privateKey;        
+        keysrc = &pki->privateKey;
     } else { /* unsupported */
         *pError = CKR_FUNCTION_NOT_SUPPORTED;
         goto done;
@@ -194,7 +194,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
        modulus data and set it again, making a copy of the new data.
        But we just allocated a new empty key structure above with
        nss_ZAlloc.  So lpk->u.rsa.modulus.data is NULL and
-       lpk->u.rsa.modulus.len.  If the intention is to free the old 
+       lpk->u.rsa.modulus.len.  If the intention is to free the old
        modulus data, why not just set it to NULL after freeing?  Why
        go through this unnecessary and confusing copying code?
     */
@@ -480,7 +480,7 @@ pem_mdCryptoOperationRSADecrypt_GetOperationLength
 /*
  * pem_mdCryptoOperationRSADecrypt_UpdateFinal
  *
- * NOTE: pem_mdCryptoOperationRSADecrypt_GetOperationLength is presumed to 
+ * NOTE: pem_mdCryptoOperationRSADecrypt_GetOperationLength is presumed to
  * have been called previously.
  */
 static CK_RV
