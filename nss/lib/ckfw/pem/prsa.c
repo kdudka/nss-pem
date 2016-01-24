@@ -171,6 +171,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
     rv = SEC_ASN1DecodeItem(arena, pki, pem_PrivateKeyInfoTemplate, rawkey);
     if (rv != SECSuccess) {
         /* not PKCS#8 - assume it's a "raw" RSA private key */
+        plog("Failed to decode key, assuming raw RSA private key\n");
         keysrc = rawkey;
     } else if (SECOID_GetAlgorithmTag(&pki->algorithm) == SEC_OID_PKCS1_RSA_ENCRYPTION) {
         keysrc = &pki->privateKey;
@@ -211,21 +212,31 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
                                 keysrc);
 
     if (rv != SECSuccess) {
-        goto done;
+        plog("SEC_QuickDERDecodeItem failed\n");
+        *pError = CKR_KEY_TYPE_INCONSISTENT;
+        return NULL;
     }
 
 done:
     return lpk;
 }
 
-void
+CK_RV
 pem_PopulateModulusExponent(pemInternalObject * io)
 {
-    const NSSItem *classItem = pem_FetchAttribute(io, CKA_CLASS);
-    const NSSItem *keyType = pem_FetchAttribute(io, CKA_KEY_TYPE);
+    CK_RV error = CKR_OK;
+    const NSSItem *classItem;
+    const NSSItem *keyType;
     pemLOWKEYPrivateKey *lpk = NULL;
     PLArenaPool *arena;
-    CK_RV pError = 0;
+
+    classItem = pem_FetchAttribute(io, CKA_CLASS, &error);
+    if (error != CKR_OK)
+        return error;
+
+    keyType = pem_FetchAttribute(io, CKA_KEY_TYPE, &error);
+    if (error != CKR_OK)
+        return error;
 
     /* make sure we have the right objects */
     if (((const NSSItem *) NULL == classItem) ||
@@ -234,18 +245,19 @@ pem_PopulateModulusExponent(pemInternalObject * io)
         ((const NSSItem *) NULL == keyType) ||
         (sizeof(CK_KEY_TYPE) != keyType->size) ||
         (CKK_RSA != *(CK_KEY_TYPE *) keyType->data)) {
-        return;
+        return CKR_KEY_TYPE_INCONSISTENT;
     }
 
     arena = PORT_NewArena(2048);
     if (!arena) {
-        return;
+        return CKR_HOST_MEMORY;
     }
 
-    lpk = pem_getPrivateKey(arena, io->u.key.key.privateKey, &pError, NULL);
+    lpk = pem_getPrivateKey(arena, io->u.key.key.privateKey, &error, NULL);
     if (lpk == NULL) {
+        plog("pem_PopulateModulusExponent: pem_getPrivateKey returned NULL, error 0x%08x\n", error);
         PORT_FreeArena(arena, PR_FALSE);
-        return;
+        return (error ? error : CKR_KEY_TYPE_INCONSISTENT);
     }
 
     nss_ZFreeIf(io->u.key.key.modulus.data);
@@ -308,7 +320,7 @@ pem_PopulateModulusExponent(pemInternalObject * io)
                    lpk->u.rsa.coefficient.len);
 
     pem_DestroyPrivateKey(lpk);
-    return;
+    return CKR_OK;
 }
 
 typedef struct pemInternalCryptoOperationRSAPrivStr
@@ -335,11 +347,19 @@ pem_mdCryptoOperationRSAPriv_Create
 )
 {
     pemInternalObject *iKey = (pemInternalObject *) mdKey->etc;
-    const NSSItem *classItem = pem_FetchAttribute(iKey, CKA_CLASS);
-    const NSSItem *keyType = pem_FetchAttribute(iKey, CKA_KEY_TYPE);
+    const NSSItem *classItem;
+    const NSSItem *keyType;
     pemInternalCryptoOperationRSAPriv *iOperation;
     pemLOWKEYPrivateKey *lpk = NULL;
     PLArenaPool *arena;
+
+    classItem = pem_FetchAttribute(iKey, CKA_CLASS, pError);
+    if (*pError != CKR_OK)
+        return (NSSCKMDCryptoOperation *) NULL;
+
+    keyType = pem_FetchAttribute(iKey, CKA_KEY_TYPE, pError);
+    if (*pError != CKR_OK)
+        return (NSSCKMDCryptoOperation *) NULL;
 
     /* make sure we have the right objects */
     if (((const NSSItem *) NULL == classItem) ||
@@ -360,6 +380,7 @@ pem_mdCryptoOperationRSAPriv_Create
 
     lpk = pem_getPrivateKey(arena, iKey->u.key.key.privateKey, pError, &iKey->u.key.key.modulus);
     if (lpk == NULL) {
+        plog("pem_mdCryptoOperationRSAPriv_Create: pem_getPrivateKey returned NULL, pError 0x%08x\n", *pError);
         PORT_FreeArena(arena, PR_FALSE);
         return (NSSCKMDCryptoOperation *) NULL;
     }
@@ -418,7 +439,7 @@ pem_mdCryptoOperationRSA_GetFinalLength
     pemInternalCryptoOperationRSAPriv *iOperation =
         (pemInternalCryptoOperationRSAPriv *) mdOperation->etc;
     const NSSItem *modulus =
-        pem_FetchAttribute(iOperation->iKey, CKA_MODULUS);
+        pem_FetchAttribute(iOperation->iKey, CKA_MODULUS, pError);
 
     if (NULL == modulus) {
         *pError = CKR_FUNCTION_FAILED;

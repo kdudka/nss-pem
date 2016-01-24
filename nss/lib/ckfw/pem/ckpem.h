@@ -230,10 +230,10 @@ typedef struct pemLOWKEYPrivateKeyStr pemLOWKEYPrivateKey;
 SECStatus ReadDERFromFile(SECItem ***derlist, char *filename, PRBool ascii, int *cipher, char **ivstring, PRBool certsonly);
 
 /* Fetch an attribute of the specified type. */
-const NSSItem * pem_FetchAttribute ( pemInternalObject *io, CK_ATTRIBUTE_TYPE type);
+const NSSItem * pem_FetchAttribute ( pemInternalObject *io, CK_ATTRIBUTE_TYPE type, CK_RV *pError);
 
 /* Populate modulus and public exponent of the given internal object */
-void pem_PopulateModulusExponent(pemInternalObject *io);
+CK_RV pem_PopulateModulusExponent(pemInternalObject *io);
 
 /* Create a pem module object */
 NSSCKMDObject * pem_CreateObject(NSSCKFWInstance *fwInstance, NSSCKFWSession *fwSession, NSSCKMDToken *mdToken, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulAttributeCount, CK_RV *pError);

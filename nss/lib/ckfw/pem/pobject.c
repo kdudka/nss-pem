@@ -271,7 +271,8 @@ const NSSItem *
 pem_FetchPrivKeyAttribute
 (
     pemInternalObject * io,
-    CK_ATTRIBUTE_TYPE type
+    CK_ATTRIBUTE_TYPE type,
+    CK_RV * pError
 )
 {
     PRBool isCertType = (pemCert == io->type);
@@ -314,49 +315,73 @@ pem_FetchPrivKeyAttribute
         return &io->u.cert.subject;
     case CKA_MODULUS:
         if (0 == kp->modulus.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_MODULUS\n");
         return &kp->modulus;
     case CKA_PUBLIC_EXPONENT:
         if (0 == kp->modulus.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_PUBLIC_EXPONENT\n");
         return &kp->exponent;
     case CKA_PRIVATE_EXPONENT:
         if (0 == kp->privateExponent.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_PRIVATE_EXPONENT\n");
         return &kp->privateExponent;
     case CKA_PRIME_1:
         if (0 == kp->prime1.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_PRIME_1\n");
         return &kp->prime1;
     case CKA_PRIME_2:
         if (0 == kp->prime2.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_PRIME_2\n");
         return &kp->prime2;
     case CKA_EXPONENT_1:
         if (0 == kp->exponent1.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_EXPONENT_1\n");
         return &kp->exponent1;
     case CKA_EXPONENT_2:
         if (0 == kp->exponent2.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_EXPONENT_2\n");
         return &kp->exponent2;
     case CKA_COEFFICIENT:
         if (0 == kp->coefficient.size) {
-            pem_PopulateModulusExponent(io);
+            *pError = pem_PopulateModulusExponent(io);
+            if (CKR_OK != *pError) {
+                return NULL;
+            }
         }
         plog("  fetch key CKA_COEFFICIENT_2\n");
         return &kp->coefficient;
@@ -519,7 +544,8 @@ const NSSItem *
 pem_FetchAttribute
 (
     pemInternalObject * io,
-    CK_ATTRIBUTE_TYPE type
+    CK_ATTRIBUTE_TYPE type,
+    CK_RV * pError
 )
 {
     CK_ULONG i;
@@ -537,7 +563,7 @@ pem_FetchAttribute
     case CKO_CERTIFICATE:
         return pem_FetchCertAttribute(io, type);
     case CKO_PRIVATE_KEY:
-        return pem_FetchPrivKeyAttribute(io, type);
+        return pem_FetchPrivKeyAttribute(io, type, pError);
     case CKO_NETSCAPE_TRUST:
         return pem_FetchTrustAttribute(io, type);
     case CKO_PUBLIC_KEY:
@@ -831,7 +857,16 @@ pem_mdObject_GetAttributeSize
                                     attribute, pError);
     }
 
-    b = pem_FetchAttribute(io, attribute);
+    b = pem_FetchAttribute(io, attribute, pError);
+    plog("pem_FetchAttribute pError = 0x%08x\n", *pError);
+
+    /* Don't assume that the returned item is NULL on error */
+    if (*pError != CKR_OK) {
+        if ((const NSSItem *) NULL != b) {
+            nss_ZFreeIf(b->data);
+        }
+        return 0;
+    }
 
     if ((const NSSItem *) NULL == b) {
         *pError = CKR_ATTRIBUTE_TYPE_INVALID;
@@ -867,9 +902,9 @@ pem_mdObject_GetAttribute
     }
 
     mdItem.needsFreeing = PR_FALSE;
-    mdItem.item = (NSSItem *) pem_FetchAttribute(io, attribute);
+    mdItem.item = (NSSItem *) pem_FetchAttribute(io, attribute, pError);
 
-    if ((NSSItem *) NULL == mdItem.item) {
+    if ((NSSItem *) NULL == mdItem.item && !*pError) {
         *pError = CKR_ATTRIBUTE_TYPE_INVALID;
     }
 

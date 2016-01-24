@@ -151,8 +151,9 @@ static CK_BBOOL
 pem_attrmatch(CK_ATTRIBUTE_PTR a, pemInternalObject * o) {
     PRBool prb;
     const NSSItem *b;
+    CK_RV error = CKR_OK;
 
-    b = pem_FetchAttribute(o, a->type);
+    b = pem_FetchAttribute(o, a->type, &error);
     if (b == NULL) {
         plog("pem_attrmatch %s %08x: CK_FALSE attr not found\n", pem_attr_name(a->type), a->type);
         return CK_FALSE;
