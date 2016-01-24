@@ -625,6 +625,11 @@ pem_DestroyInternalObject
         if (io->u.key.ivstring)
             PORT_Free(io->u.key.ivstring);
         break;
+    case pemAll:
+        /* pemAll is not used, keep the compiler happy
+         * TODO: investigate a proper solution
+         */
+        return;
     }
 
     if (NULL != pem_objs)
@@ -1113,7 +1118,11 @@ pem_CreateObject
     }
 
     if (objClass == CKO_CERTIFICATE) {
-        nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
+        /* TODO: Fix discrepancy between our usage of the return value as
+         * as an int and the declaration as a SECStatus. Typecasting as a
+         * temporary workaround.
+         */
+        nobjs = (int) ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
         if (nobjs < 1)
             goto loser;
 

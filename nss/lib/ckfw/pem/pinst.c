@@ -543,7 +543,9 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     int cipher;
     char *nickname = NULL;
 
-    nobjs = ReadDERFromFile(&objs, certfile, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
+    /* TODO: Fix discrepancy between our usage of the return value as
+     * as an int (a count) and the declaration as a SECStatus. */
+    nobjs = (int) ReadDERFromFile(&objs, certfile, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
     if (nobjs <= 0) {
         nss_ZFreeIf(objs);
         return CKR_GENERAL_ERROR;
@@ -591,8 +593,10 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
         if (o != NULL && keyfile != NULL) { /* add the private key */
             SECItem **keyobjs = NULL;
             int kobjs = 0;
+            /* TODO: Fix discrepancy between our usage of the return value as
+             * as an int and the declaration as a SECStatus. */
             kobjs =
-                ReadDERFromFile(&keyobjs, keyfile, PR_TRUE, &cipher,
+                (int) ReadDERFromFile(&keyobjs, keyfile, PR_TRUE, &cipher,
                                 &ivstring, PR_FALSE);
             if (kobjs < 1) {
                 found_error = PR_TRUE;

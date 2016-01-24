@@ -150,7 +150,8 @@ static SECStatus ConvertAsciiToZAllocItem(SECItem *der, const char *ascii)
     return rv;
 }
 
-int
+/* FIX: Returns a SECStatus yet callers take result as a count */
+SECStatus
 ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		int *cipher, char **ivstring, PRBool certsonly)
 {
