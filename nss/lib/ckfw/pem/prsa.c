@@ -214,6 +214,8 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
     if (rv != SECSuccess) {
         plog("SEC_QuickDERDecodeItem failed\n");
         *pError = CKR_KEY_TYPE_INCONSISTENT;
+        /* do not use pem_DestroyPrivateKey() to avoid double free of arena */
+        nss_ZFreeIf(lpk);
         return NULL;
     }
 
