@@ -340,7 +340,7 @@ struct pemInternalCryptoOperationRSAPrivStr
     NSSCKMDMechanism *mdMechanism;
     pemInternalObject *iKey;
     pemLOWKEYPrivateKey *lpk;
-    NSSItem *buffer;
+    NSSItem buffer;
 };
 
 /*
@@ -421,10 +421,9 @@ pem_mdCryptoOperationRSAPriv_Destroy
     pemInternalCryptoOperationRSAPriv *iOperation =
         (pemInternalCryptoOperationRSAPriv *) mdOperation->etc;
 
-    if (iOperation->buffer) {
-        nssItem_Destroy(iOperation->buffer);
-        iOperation->buffer = NULL;
-    }
+    NSS_ZFreeIf(iOperation->buffer.data);
+    iOperation->buffer.data = NULL;
+
     pem_DestroyPrivateKey(iOperation->lpk);
     iOperation->lpk = NULL;
     NSS_ZFreeIf(iOperation);
@@ -488,22 +487,25 @@ pem_mdCryptoOperationRSADecrypt_GetOperationLength
 
     /* Microsoft's Decrypt operation works in place. Since we don't want
      * to trash our input buffer, we make a copy of it */
-    iOperation->buffer = nssItem_Duplicate((NSSItem *) input, NULL, NULL);
-    if ((NSSItem *) NULL == iOperation->buffer) {
+    iOperation->buffer.data = NSS_ZAlloc(NULL, input->size);
+    if (NULL == iOperation->buffer.data) {
         *pError = CKR_HOST_MEMORY;
         return 0;
     }
+    /* copy data and initialize size of the NSSItem */
+    memcpy(iOperation->buffer.data, input->data, input->size);
+    iOperation->buffer.size = input->size;
 
-    rv = pem_RSA_DecryptBlock(iOperation->lpk, iOperation->buffer->data,
-                              &iOperation->buffer->size,
-                              iOperation->buffer->size, input->data,
+    rv = pem_RSA_DecryptBlock(iOperation->lpk, iOperation->buffer.data,
+                              &iOperation->buffer.size,
+                              iOperation->buffer.size, input->data,
                               input->size);
 
     if (rv != SECSuccess) {
         return 0;
     }
 
-    return iOperation->buffer->size;
+    return iOperation->buffer.size;
 }
 
 /*
@@ -529,9 +531,9 @@ pem_mdCryptoOperationRSADecrypt_UpdateFinal
 {
     pemInternalCryptoOperationRSAPriv *iOperation =
         (pemInternalCryptoOperationRSAPriv *) mdOperation->etc;
-    NSSItem *buffer = iOperation->buffer;
+    NSSItem *buffer = &iOperation->buffer;
 
-    if ((NSSItem *) NULL == buffer) {
+    if (NULL == buffer->data) {
         return CKR_GENERAL_ERROR;
     }
     memcpy(output->data, buffer->data, buffer->size);
