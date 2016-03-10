@@ -42,6 +42,17 @@
 #include <pk11pub.h>
 #include <secasn1.h>
 
+/* FIXME: this breaks the boundary of the public API of NSS */
+#if 1
+CK_SESSION_HANDLE nssCKFWInstance_FindSessionHandle(
+        NSSCKFWInstance *fwInstance,
+        NSSCKFWSession *fwSession);
+
+void nssCKFWInstance_DestroySessionHandle(
+        NSSCKFWInstance *fwInstance,
+        CK_SESSION_HANDLE hSession);
+#endif
+
 /*
  * pobject.c
  *
@@ -1211,7 +1222,6 @@ pem_CreateObject
         /* Brute force: find the id of the certificate, if any, in this slot */
         int i;
         SECItem certDER;
-        CK_SESSION_HANDLE hSession;
         PRBool added;
         char *nickname;
 
@@ -1266,16 +1276,12 @@ pem_CreateObject
          * the token was removed so we can force a login.
          */
         if (cipher && added) {
-            /* FIXME: Why 1.0s? Is it enough? Isn't it too much?
-             * What about e.g. 3.14s? */
-            PRIntervalTime onesec = PR_SecondsToInterval(1);
-            token_needsLogin[slotID - 1] = PR_TRUE;
+            /* remember the slot for pem_mdInstance_WaitForSlotEvent() */
+            lastEventSlot = NSSCKFWSlot_GetMDSlot(fwSlot);
 
-            /* We have to sleep so that NSS will notice that the token was
-             * removed.
-             */
-            PR_Sleep(onesec);
-            hSession =
+            token_needsLogin[slotID - 1] = PR_TRUE;
+            /* FIXME: dirty hack relying on NSS internals */
+            CK_SESSION_HANDLE hSession =
                 nssCKFWInstance_FindSessionHandle(fwInstance, fwSession);
             nssCKFWInstance_DestroySessionHandle(fwInstance, hSession);
         } else {

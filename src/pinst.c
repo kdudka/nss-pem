@@ -53,6 +53,7 @@ static PRBool pemInitialized = PR_FALSE;
 pemInternalObject **pem_objs;
 int pem_nobjs = 0;
 int token_needsLogin[NUM_SLOTS];
+NSSCKMDSlot *lastEventSlot;
 PLHashTable *nicknameHashTable = NULL;
 
 static void *strcpy_AllocTable(void *pool, PRSize size) {
@@ -937,6 +938,16 @@ pem_mdInstance_ModuleHandlesSessionObjects
     return CK_TRUE;
 }
 
+static NSSCKMDSlot *
+pem_mdInstance_WaitForSlotEvent(
+    NSSCKMDInstance * mdInstance,
+    NSSCKFWInstance * fwInstance,
+    CK_BBOOL block,
+    CK_RV * pError)
+{
+    return lastEventSlot;
+}
+
 NSS_IMPLEMENT_DATA const NSSCKMDInstance
 pem_mdInstance = {
     (void *) NULL, /* etc */
@@ -949,6 +960,6 @@ pem_mdInstance = {
     pem_mdInstance_GetLibraryVersion,
     pem_mdInstance_ModuleHandlesSessionObjects,
     pem_mdInstance_GetSlots,
-    NULL, /* WaitForSlotEvent */
+    pem_mdInstance_WaitForSlotEvent,
     (void *) NULL /* null terminator */
 };
