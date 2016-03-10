@@ -37,18 +37,40 @@
 
 #include "ckpem.h"
 
-#include <nssckmdt.h>
-#include <secdert.h>
-#include <secoid.h>
-
-#define SSL3_SHAMD5_HASH_SIZE  36       /* LEN_MD5 (16) + LEN_SHA1 (20) */
-
 /*
  * prsa.c
  *
  * This file implements the NSSCKMDMechnaism and NSSCKMDCryptoOperation objects
  * for the RSA operation.
  */
+
+#include <nssckmdt.h>
+#include <secdert.h>
+#include <secoid.h>
+
+#define SSL3_SHAMD5_HASH_SIZE  36       /* LEN_MD5 (16) + LEN_SHA1 (20) */
+
+#ifdef HAVE_LOWKEYTI_H
+#   include <lowkeyti.h>
+#else
+/*
+ * we are dealing with older NSS that does not include the patch
+ * for https://bugzilla.mozilla.org/show_bug.cgi?id=1263179 yet
+ */
+struct NSSLOWKEYAttributeStr {
+    SECItem attrType;
+    SECItem *attrValue;
+};
+typedef struct NSSLOWKEYAttributeStr NSSLOWKEYAttribute;
+struct NSSLOWKEYPrivateKeyInfoStr {
+    PLArenaPool *arena;
+    SECItem version;
+    SECAlgorithmID algorithm;
+    SECItem privateKey;
+    NSSLOWKEYAttribute **attributes;
+};
+typedef struct NSSLOWKEYPrivateKeyInfoStr NSSLOWKEYPrivateKeyInfo;
+#endif
 
 const SEC_ASN1Template pem_RSAPrivateKeyTemplate[] = {
     {SEC_ASN1_SEQUENCE, 0, NULL, sizeof(pemLOWKEYPrivateKey)} ,

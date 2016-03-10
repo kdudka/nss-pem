@@ -7,6 +7,13 @@ pkg_check_modules(NSS REQUIRED "nss")
 include_directories(${NSS_INCLUDE_DIRS})
 link_directories(${NSS_LIBRARY_DIRS})
 
+include(CheckIncludeFile)
+set(CMAKE_REQUIRED_INCLUDES ${NSS_INCLUDE_DIRS})
+check_include_file(lowkeyti.h LOWKEYTI_H)
+if(LOWKEYTI_H)
+    add_definitions(-DHAVE_LOWKEYTI_H)
+endif()
+
 # modules used to build libnsspem.so
 set(MODULES
     anchor.c
