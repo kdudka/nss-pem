@@ -109,7 +109,7 @@ pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
     if (*output_len > max_output_len)
         goto loser;
 
-    nsslibc_memcpy(output, buffer + modulus_len - *output_len, *output_len);
+    memcpy(output, buffer + modulus_len - *output_len, *output_len);
 
     NSS_ZFreeIf(buffer);
     return SECSuccess;

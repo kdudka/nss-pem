@@ -204,8 +204,9 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         NSS_ZFreeIf(modulus->data);
         modulus->data = (void *) NSS_ZAlloc(NULL, lpk->u.rsa.modulus.len);
         modulus->size = lpk->u.rsa.modulus.len;
-        nsslibc_memcpy(modulus->data, lpk->u.rsa.modulus.data,
-                       lpk->u.rsa.modulus.len);
+        memcpy(modulus->data,
+                lpk->u.rsa.modulus.data,
+                lpk->u.rsa.modulus.len);
     }
 
     /* decode the private key and any algorithm parameters */
@@ -267,60 +268,65 @@ pem_PopulateModulusExponent(pemInternalObject * io)
     io->u.key.key.modulus.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.modulus.len);
     io->u.key.key.modulus.size = lpk->u.rsa.modulus.len;
-    nsslibc_memcpy(io->u.key.key.modulus.data, lpk->u.rsa.modulus.data,
-                   lpk->u.rsa.modulus.len);
+    memcpy(io->u.key.key.modulus.data,
+            lpk->u.rsa.modulus.data,
+            lpk->u.rsa.modulus.len);
 
     NSS_ZFreeIf(io->u.key.key.exponent.data);
     io->u.key.key.exponent.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.publicExponent.len);
     io->u.key.key.exponent.size = lpk->u.rsa.publicExponent.len;
-    nsslibc_memcpy(io->u.key.key.exponent.data,
-                   lpk->u.rsa.publicExponent.data,
-                   lpk->u.rsa.publicExponent.len);
+    memcpy(io->u.key.key.exponent.data,
+            lpk->u.rsa.publicExponent.data,
+            lpk->u.rsa.publicExponent.len);
 
     NSS_ZFreeIf(io->u.key.key.privateExponent.data);
     io->u.key.key.privateExponent.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.privateExponent.len);
     io->u.key.key.privateExponent.size = lpk->u.rsa.privateExponent.len;
-    nsslibc_memcpy(io->u.key.key.privateExponent.data,
-                   lpk->u.rsa.privateExponent.data,
-                   lpk->u.rsa.privateExponent.len);
+    memcpy(io->u.key.key.privateExponent.data,
+            lpk->u.rsa.privateExponent.data,
+            lpk->u.rsa.privateExponent.len);
 
     NSS_ZFreeIf(io->u.key.key.prime1.data);
     io->u.key.key.prime1.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.prime1.len);
     io->u.key.key.prime1.size = lpk->u.rsa.prime1.len;
-    nsslibc_memcpy(io->u.key.key.prime1.data, lpk->u.rsa.prime1.data,
-                   lpk->u.rsa.prime1.len);
+    memcpy(io->u.key.key.prime1.data,
+            lpk->u.rsa.prime1.data,
+            lpk->u.rsa.prime1.len);
 
     NSS_ZFreeIf(io->u.key.key.prime2.data);
     io->u.key.key.prime2.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.prime2.len);
     io->u.key.key.prime2.size = lpk->u.rsa.prime2.len;
-    nsslibc_memcpy(io->u.key.key.prime2.data, lpk->u.rsa.prime2.data,
-                   lpk->u.rsa.prime2.len);
+    memcpy(io->u.key.key.prime2.data,
+            lpk->u.rsa.prime2.data,
+            lpk->u.rsa.prime2.len);
 
     NSS_ZFreeIf(io->u.key.key.exponent1.data);
     io->u.key.key.exponent1.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.exponent1.len);
     io->u.key.key.exponent1.size = lpk->u.rsa.exponent1.len;
-    nsslibc_memcpy(io->u.key.key.exponent1.data, lpk->u.rsa.exponent1.data,
-                   lpk->u.rsa.exponent1.len);
+    memcpy(io->u.key.key.exponent1.data,
+            lpk->u.rsa.exponent1.data,
+            lpk->u.rsa.exponent1.len);
 
     NSS_ZFreeIf(io->u.key.key.exponent2.data);
     io->u.key.key.exponent2.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.exponent2.len);
     io->u.key.key.exponent2.size = lpk->u.rsa.exponent2.len;
-    nsslibc_memcpy(io->u.key.key.exponent2.data, lpk->u.rsa.exponent2.data,
-                   lpk->u.rsa.exponent2.len);
+    memcpy(io->u.key.key.exponent2.data,
+            lpk->u.rsa.exponent2.data,
+            lpk->u.rsa.exponent2.len);
 
     NSS_ZFreeIf(io->u.key.key.coefficient.data);
     io->u.key.key.coefficient.data =
         (void *) NSS_ZAlloc(NULL, lpk->u.rsa.coefficient.len);
     io->u.key.key.coefficient.size = lpk->u.rsa.coefficient.len;
-    nsslibc_memcpy(io->u.key.key.coefficient.data,
-                   lpk->u.rsa.coefficient.data,
-                   lpk->u.rsa.coefficient.len);
+    memcpy(io->u.key.key.coefficient.data,
+            lpk->u.rsa.coefficient.data,
+            lpk->u.rsa.coefficient.len);
 
     pem_DestroyPrivateKey(lpk);
     return CKR_OK;
@@ -397,8 +403,7 @@ pem_mdCryptoOperationRSAPriv_Create
     iOperation->iKey = iKey;
     iOperation->lpk = lpk;
 
-    nsslibc_memcpy(&iOperation->mdOperation,
-                   proto, sizeof(NSSCKMDCryptoOperation));
+    memcpy(&iOperation->mdOperation, proto, sizeof iOperation->mdOperation);
     iOperation->mdOperation.etc = iOperation;
 
     return &iOperation->mdOperation;
@@ -529,7 +534,7 @@ pem_mdCryptoOperationRSADecrypt_UpdateFinal
     if ((NSSItem *) NULL == buffer) {
         return CKR_GENERAL_ERROR;
     }
-    nsslibc_memcpy(output->data, buffer->data, buffer->size);
+    memcpy(output->data, buffer->data, buffer->size);
     output->size = buffer->size;
     return CKR_OK;
 }

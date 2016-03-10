@@ -289,7 +289,7 @@ assignObjectID(pemInternalObject *o, int objid)
     if (o->id.data == NULL)
         return CKR_HOST_MEMORY;
 
-    nsslibc_memcpy(o->id.data, id, len);
+    memcpy(o->id.data, id, len);
     return CKR_OK;
 }
 
@@ -346,7 +346,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
     if (o->derCert->data == NULL)
         goto fail;
     o->derCert->len = certDER->len;
-    nsslibc_memcpy(o->derCert->data, certDER->data, certDER->len);
+    memcpy(o->derCert->data, certDER->data, certDER->len);
 
     switch (objClass) {
     case CKO_CERTIFICATE:
@@ -360,7 +360,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
         if (o->u.cert.subject.data == NULL)
             goto fail;
         o->u.cert.subject.size = subject.len;
-        nsslibc_memcpy(o->u.cert.subject.data, subject.data, subject.len);
+        memcpy(o->u.cert.subject.data, subject.data, subject.len);
 
         o->u.cert.issuer.data = (void *) NSS_ZAlloc(NULL, issuer.len);
         if (o->u.cert.issuer.data == NULL) {
@@ -368,7 +368,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
             goto fail;
         }
         o->u.cert.issuer.size = issuer.len;
-        nsslibc_memcpy(o->u.cert.issuer.data, issuer.data, issuer.len);
+        memcpy(o->u.cert.issuer.data, issuer.data, issuer.len);
 
         o->u.cert.serial.data = (void *) NSS_ZAlloc(NULL, serial.len);
         if (o->u.cert.serial.data == NULL) {
@@ -377,7 +377,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
             goto fail;
         }
         o->u.cert.serial.size = serial.len;
-        nsslibc_memcpy(o->u.cert.serial.data, serial.data, serial.len);
+        memcpy(o->u.cert.serial.data, serial.data, serial.len);
         break;
     case CKO_PRIVATE_KEY:
         o->u.key.key.privateKey = NSS_ZNEW(NULL, SECItem);
@@ -399,8 +399,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
         }
 
         o->u.key.key.privateKey->len = keyDER->len;
-        nsslibc_memcpy(o->u.key.key.privateKey->data, keyDER->data,
-                       keyDER->len);
+        memcpy(o->u.key.key.privateKey->data, keyDER->data, keyDER->len);
     }
 
 

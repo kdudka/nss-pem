@@ -164,7 +164,7 @@ pem_attrmatch(CK_ATTRIBUTE_PTR a, pemInternalObject * o) {
         return CK_FALSE;
     }
 
-    prb = nsslibc_memequal(a->pValue, b->data, b->size, (PRStatus *) NULL);
+    prb = (0 == memcmp(a->pValue, b->data, b->size));
 
     if (PR_TRUE == prb) {
         plog("pem_attrmatch %s %08x: CK_TRUE\n", pem_attr_name(a->type), a->type);
@@ -407,8 +407,7 @@ pem_FindObjectsInit
         goto loser;
     }
 
-    (void) nsslibc_memcpy(fo->objs, temp,
-                          sizeof(pemInternalObject *) * fo->n);
+    memcpy(fo->objs, temp, sizeof(pemInternalObject *) * fo->n);
 
     NSS_ZFreeIf(temp);
     temp = (pemInternalObject **) NULL;

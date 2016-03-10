@@ -516,7 +516,7 @@ pem_FetchTrustAttribute
     case CKA_CERT_SHA1_HASH:
         hash.size = 0;
         hash.data = NULL;
-        nsslibc_memset(io->u.cert.sha1_hash, 0, SHA1_LENGTH);
+        memset(io->u.cert.sha1_hash, 0, SHA1_LENGTH);
         rv = SHA1_HashBuf(io->u.cert.sha1_hash, io->derCert->data,
                           io->derCert->len);
         if (rv == SECSuccess) {
@@ -527,7 +527,7 @@ pem_FetchTrustAttribute
     case CKA_CERT_MD5_HASH:
         hash.size = 0;
         hash.data = NULL;
-        nsslibc_memset(io->u.cert.sha1_hash, 0, MD5_LENGTH);
+        memset(io->u.cert.sha1_hash, 0, MD5_LENGTH);
         rv = MD5_HashBuf(io->u.cert.sha1_hash, io->derCert->data,
                          io->derCert->len);
         if (rv == SECSuccess) {
@@ -1015,7 +1015,7 @@ pem_GetStringAttribute
         return (char *) NULL;
     }
 
-    nsslibc_memcpy(str, item.data, item.size);
+    memcpy(str, item.data, item.size);
     str[item.size] = 0;
 
     return str;
@@ -1046,8 +1046,7 @@ pem_CreateMDObject
 )
 {
     if ((void *) NULL == io->mdObject.etc) {
-        (void) nsslibc_memcpy(&io->mdObject, &pem_prototype_mdObject,
-                              sizeof(pem_prototype_mdObject));
+        memcpy(&io->mdObject, &pem_prototype_mdObject, sizeof io->mdObject);
         io->mdObject.etc = (void *) io;
     }
 
@@ -1237,8 +1236,9 @@ pem_CreateObject
                     goto loser;
 
                 certDER.len = pem_objs[i]->derCert->len;
-                nsslibc_memcpy(certDER.data, pem_objs[i]->derCert->data,
-                               pem_objs[i]->derCert->len);
+                memcpy(certDER.data,
+                        pem_objs[i]->derCert->data,
+                        pem_objs[i]->derCert->len);
             }
         }
 
