@@ -363,11 +363,11 @@ pem_FindObjectsInit
     CK_SLOT_ID slotID;
 
     plog("pem_FindObjectsInit\n");
-    fwSlot = nssCKFWSession_GetFWSlot(fwSession);
+    fwSlot = NSSCKFWSession_GetFWSlot(fwSession);
     if ((NSSCKFWSlot *) NULL == fwSlot) {
         goto loser;
     }
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
     arena = NSSArena_Create();
     if ((NSSArena *) NULL == arena) {

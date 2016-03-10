@@ -61,7 +61,7 @@ pem_mdToken_GetLabel
 
     arena = NSSCKFWInstance_GetArena(fwInstance, pError);
     fwSlot = NSSCKFWToken_GetFWSlot(fwToken);
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
     tokenid = (char *) NSS_ZAlloc(arena, 256);
     snprintf(tokenid, 256, "PEM Token #%ld", slotID);
@@ -231,7 +231,7 @@ pem_mdToken_GetLoginRequired
     CK_SLOT_ID slotID;
 
     fwSlot = NSSCKFWToken_GetFWSlot(fwToken);
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
     label = pem_mdToken_GetLabel(mdToken, fwToken, mdInstance, fwInstance,
                              &pError);

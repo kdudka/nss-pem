@@ -37,13 +37,21 @@
 
 #include "ckpem.h"
 
+/*
+ * pobject.c
+ *
+ * This file implements the NSSCKMDObject object for the
+ * "PEM objects" cryptoki module.
+ */
+
 #include <blapi.h>
 #include <certt.h>
 #include <pk11pub.h>
 #include <secasn1.h>
 
-/* FIXME: this breaks the boundary of the public API of NSS */
-#if 1
+#ifndef HAVE_GETSLOTID_FN
+#   define NSSCKFWInstance_FindSessionHandle nssCKFWInstance_FindSessionHandle
+#   define NSSCKFWInstance_DestroySessionHandle nssCKFWInstance_DestroySessionHandle
 CK_SESSION_HANDLE nssCKFWInstance_FindSessionHandle(
         NSSCKFWInstance *fwInstance,
         NSSCKFWSession *fwSession);
@@ -52,13 +60,6 @@ void nssCKFWInstance_DestroySessionHandle(
         NSSCKFWInstance *fwInstance,
         CK_SESSION_HANDLE hSession);
 #endif
-
-/*
- * pobject.c
- *
- * This file implements the NSSCKMDObject object for the
- * "PEM objects" cryptoki module.
- */
 
 #define APPEND_LIST_ITEM(item) do { \
     item->next = NSS_ZNEW(NULL, pemObjectListItem); \
@@ -1113,14 +1114,14 @@ pem_CreateObject
     }
 
     /* What slot are we adding the object to? */
-    fwSlot = nssCKFWSession_GetFWSlot(fwSession);
+    fwSlot = NSSCKFWSession_GetFWSlot(fwSession);
     if ((NSSCKFWSlot *) NULL == fwSlot) {
         *pError = CKR_ATTRIBUTE_VALUE_INVALID;
         *pError = CKR_GENERAL_ERROR;
         return (NSSCKMDObject *) NULL;
 
     }
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
 #if 0
     token = (pemToken *) mdToken->etc;
@@ -1282,8 +1283,8 @@ pem_CreateObject
             token_needsLogin[slotID - 1] = PR_TRUE;
             /* FIXME: dirty hack relying on NSS internals */
             CK_SESSION_HANDLE hSession =
-                nssCKFWInstance_FindSessionHandle(fwInstance, fwSession);
-            nssCKFWInstance_DestroySessionHandle(fwInstance, hSession);
+                NSSCKFWInstance_FindSessionHandle(fwInstance, fwSession);
+            NSSCKFWInstance_DestroySessionHandle(fwInstance, hSession);
         } else {
             *pError = CKR_KEY_UNEXTRACTABLE;
         }

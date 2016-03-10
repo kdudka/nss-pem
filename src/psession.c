@@ -244,7 +244,7 @@ pem_mdSession_Login
     int i;
 
     fwSlot = NSSCKFWToken_GetFWSlot(fwToken);
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
     arena = PORT_NewArena(2048);
     if (!arena) {

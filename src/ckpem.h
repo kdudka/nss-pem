@@ -41,6 +41,13 @@ struct NSSLOWKEYPrivateKeyStr {
 typedef struct NSSLOWKEYPrivateKeyStr NSSLOWKEYPrivateKey;
 #endif
 
+#ifndef HAVE_GETSLOTID_FN
+#   define NSSCKFWSession_GetFWSlot nssCKFWSession_GetFWSlot
+#   define NSSCKFWSlot_GetSlotID nssCKFWSlot_GetSlotID
+NSSCKFWSlot* nssCKFWSession_GetFWSlot(NSSCKFWSession *fwSession);
+CK_SLOT_ID nssCKFWSlot_GetSlotID(NSSCKFWSlot *fwSlot);
+#endif
+
 /* FIXME don't hard-code the number of slots */
 #define NUM_SLOTS 8
 

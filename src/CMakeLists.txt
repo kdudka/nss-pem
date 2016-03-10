@@ -14,6 +14,13 @@ if(LOWKEYTI_H)
     add_definitions(-DHAVE_LOWKEYTI_H)
 endif()
 
+include(CheckFunctionExists)
+set(CMAKE_REQUIRED_LIBRARIES nsspem nssckfw nssb freebl ${NSS_LIBRARIES})
+check_function_exists(NSSCKFWSlot_GetSlotID GETSLOTID_FN)
+if(GETSLOTID_FN)
+    add_definitions(-DHAVE_GETSLOTID_FN)
+endif()
+
 # modules used to build libnsspem.so
 set(MODULES
     anchor.c
@@ -31,8 +38,7 @@ set(MODULES
     util.c)
 
 # rules to create libnsspem.so
-# FIXME: should we really link nssckfw.a, nssb.a and freebl.a static libs?
 add_library(nsspem SHARED ${MODULES})
-target_link_libraries(nsspem nssckfw nssb freebl ${NSS_LIBRARIES})
+target_link_libraries(${CMAKE_REQUIRED_LIBRARIES})
 set_target_properties(nsspem PROPERTIES LINK_FLAGS -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/nsspem.def)
 install(TARGETS nsspem DESTINATION lib)

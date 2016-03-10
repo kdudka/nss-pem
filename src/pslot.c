@@ -59,7 +59,7 @@ pem_mdSlot_GetSlotDescription
     char *slotid;
 
     arena = NSSCKFWInstance_GetArena(fwInstance, pError);
-    slotID = nssCKFWSlot_GetSlotID(fwSlot);
+    slotID = NSSCKFWSlot_GetSlotID(fwSlot);
 
     slotid = (char *) NSS_ZAlloc(arena, 256);
     snprintf(slotid, 256, "PEM Slot #%ld", slotID);
