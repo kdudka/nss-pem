@@ -41,12 +41,11 @@
 /* $Id: $ */
 
 #include "ckpem.h"
-#include "blapi.h"
-#include "softoken.h"
-#include "sechash.h"
-#include "base.h"
 
-#include "secerr.h"
+#include <blapi.h>
+#include <nssbase.h>
+#include <secerr.h>
+#include <sechash.h>
 
 /* XXX Doesn't set error code */
 SECStatus

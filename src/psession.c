@@ -36,10 +36,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "ckpem.h"
-#include "secmodt.h"
-#include "pk11pub.h"
-#include "base64.h"
-#include "blapi.h"
+
+#include <base64.h>
+#include <blapi.h>
+#include <pk11pub.h>
+#include <secmodt.h>
 
 /*
  * psession.c

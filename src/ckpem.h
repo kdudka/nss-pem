@@ -1,30 +1,15 @@
 #ifndef CKPEM_H
 #define CKPEM_H
 
-#include "nssckmdt.h"
-#include "nssckfw.h"
-#include "ckfwtm.h"
-#include "ckfw.h"
-#include "secder.h"
-#include "secoid.h"
-#include "secasn1.h"
-#include "blapit.h"
-#include "softoken.h"
-
-/*
- * I'm including this for access to the arena functions.
- * Looks like we should publish that API.
- */
-#ifndef BASE_H
-#include "base.h"
-#endif /* BASE_H */
-
-/*
- * This is where the Netscape extensions live, at least for now.
- */
-#ifndef CKT_H
-#include "ckt.h"
-#endif /* CKT_H */
+#include <blapit.h>
+#include <nssbase.h>
+#include <nssckmdt.h>           /* must be before <nssckfw.h> */
+#include <nssckfw.h>
+#include <nssckfwt.h>
+#include <nssckt.h>
+#include <secasn1.h>
+#include <secder.h>
+#include <secoid.h>
 
 /* FIXME don't hard-code the number of slots */
 #define NUM_SLOTS 8

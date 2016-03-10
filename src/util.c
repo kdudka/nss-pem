@@ -37,22 +37,16 @@
 
 /* cribbed from secutil.c */
 
-#include "prtypes.h"
-#include "prtime.h"
-#include "prlong.h"
-#include "prerror.h"
-#include "prlog.h"
-#include "prprf.h"
-#include "plgetopt.h"
-#include "prenv.h"
-#include "prnetdb.h"
-#include "base.h"
-#include "base64.h"
-#include "nssb64.h"
-#include "cryptohi.h"
-#include "secpkcs7.h"
-#include "secerr.h"
 #include "ckpem.h"
+
+#include <base64.h>
+#include <cryptohi.h>
+#include <nspr.h>
+#include <nssb64.h>
+#include <nssbase.h>
+#include <secerr.h>
+#include <secpkcs7.h>
+
 #include <stdarg.h>
 
 static int put_object(SECItem *der, SECItem ***derlist, int *count)

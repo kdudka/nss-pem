@@ -40,17 +40,9 @@
  * Identification and other constants, all collected here in one place.
  */
 
-#ifndef NSSBASET_H
-#include "nssbaset.h"
-#endif /* NSSBASET_H */
-
-#ifndef NSSCKT_H
-#include "nssckt.h"
-#endif /* NSSCKT_H */
-
-#ifndef NSSCKBI_H
-#include "../builtins/nssckbi.h"
-#endif /* NSSCKBI_H */
+#include <nssbaset.h>
+#include <nssckbi.h>
+#include <nssckt.h>
 
 NSS_IMPLEMENT_DATA const CK_VERSION
 pem_CryptokiVersion =  { 2, 1 };

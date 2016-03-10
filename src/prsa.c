@@ -36,9 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "ckpem.h"
-#include "secdert.h"
-#include "secoid.h"
-#include "nssckmdt.h"
+
+#include <nssckmdt.h>
+#include <secdert.h>
+#include <secoid.h>
 
 #define SSL3_SHAMD5_HASH_SIZE  36       /* LEN_MD5 (16) + LEN_SHA1 (20) */
 

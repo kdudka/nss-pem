@@ -35,11 +35,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <string.h>
-#include <nspr.h>
-#include <secport.h>
-#include <base.h>
 #include "ckpem.h"
+
+#include <nspr.h>
+#include <nssbase.h>
+#include <secport.h>
+
+#include <string.h>
 
 /*
  * Returns a pointer to a new string, which is a duplicate of the string (subset)

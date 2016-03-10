@@ -36,9 +36,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "ckpem.h"
-#include "secasn1.h"
-#include "certt.h"
-#include "pk11pub.h"
+
+#include <blapi.h>
+#include <certt.h>
+#include <pk11pub.h>
+#include <secasn1.h>
 
 /*
  * pobject.c
