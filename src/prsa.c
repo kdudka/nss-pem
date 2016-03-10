@@ -143,7 +143,7 @@ pem_DestroyPrivateKey(pemLOWKEYPrivateKey * privk)
     if (privk && privk->arena) {
         PORT_FreeArena(privk->arena, PR_TRUE);
     }
-    nss_ZFreeIf(privk);
+    NSS_ZFreeIf(privk);
 }
 
 /* decode and parse the rawkey into the lpk structure */
@@ -181,7 +181,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         goto done;
     }
 
-    lpk = (pemLOWKEYPrivateKey *) nss_ZAlloc(NULL,
+    lpk = (pemLOWKEYPrivateKey *) NSS_ZAlloc(NULL,
                                              sizeof(pemLOWKEYPrivateKey));
     if (lpk == NULL) {
         *pError = CKR_HOST_MEMORY;
@@ -195,14 +195,14 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
     /* I don't know what this is supposed to accomplish.  We free the old
        modulus data and set it again, making a copy of the new data.
        But we just allocated a new empty key structure above with
-       nss_ZAlloc.  So lpk->u.rsa.modulus.data is NULL and
+       NSS_ZAlloc.  So lpk->u.rsa.modulus.data is NULL and
        lpk->u.rsa.modulus.len.  If the intention is to free the old
        modulus data, why not just set it to NULL after freeing?  Why
        go through this unnecessary and confusing copying code?
     */
     if (modulus) {
-        nss_ZFreeIf(modulus->data);
-        modulus->data = (void *) nss_ZAlloc(NULL, lpk->u.rsa.modulus.len);
+        NSS_ZFreeIf(modulus->data);
+        modulus->data = (void *) NSS_ZAlloc(NULL, lpk->u.rsa.modulus.len);
         modulus->size = lpk->u.rsa.modulus.len;
         nsslibc_memcpy(modulus->data, lpk->u.rsa.modulus.data,
                        lpk->u.rsa.modulus.len);
@@ -216,7 +216,7 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         plog("SEC_QuickDERDecodeItem failed\n");
         *pError = CKR_KEY_TYPE_INCONSISTENT;
         /* do not use pem_DestroyPrivateKey() to avoid double free of arena */
-        nss_ZFreeIf(lpk);
+        NSS_ZFreeIf(lpk);
         return NULL;
     }
 
@@ -263,60 +263,60 @@ pem_PopulateModulusExponent(pemInternalObject * io)
         return (error ? error : CKR_KEY_TYPE_INCONSISTENT);
     }
 
-    nss_ZFreeIf(io->u.key.key.modulus.data);
+    NSS_ZFreeIf(io->u.key.key.modulus.data);
     io->u.key.key.modulus.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.modulus.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.modulus.len);
     io->u.key.key.modulus.size = lpk->u.rsa.modulus.len;
     nsslibc_memcpy(io->u.key.key.modulus.data, lpk->u.rsa.modulus.data,
                    lpk->u.rsa.modulus.len);
 
-    nss_ZFreeIf(io->u.key.key.exponent.data);
+    NSS_ZFreeIf(io->u.key.key.exponent.data);
     io->u.key.key.exponent.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.publicExponent.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.publicExponent.len);
     io->u.key.key.exponent.size = lpk->u.rsa.publicExponent.len;
     nsslibc_memcpy(io->u.key.key.exponent.data,
                    lpk->u.rsa.publicExponent.data,
                    lpk->u.rsa.publicExponent.len);
 
-    nss_ZFreeIf(io->u.key.key.privateExponent.data);
+    NSS_ZFreeIf(io->u.key.key.privateExponent.data);
     io->u.key.key.privateExponent.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.privateExponent.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.privateExponent.len);
     io->u.key.key.privateExponent.size = lpk->u.rsa.privateExponent.len;
     nsslibc_memcpy(io->u.key.key.privateExponent.data,
                    lpk->u.rsa.privateExponent.data,
                    lpk->u.rsa.privateExponent.len);
 
-    nss_ZFreeIf(io->u.key.key.prime1.data);
+    NSS_ZFreeIf(io->u.key.key.prime1.data);
     io->u.key.key.prime1.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.prime1.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.prime1.len);
     io->u.key.key.prime1.size = lpk->u.rsa.prime1.len;
     nsslibc_memcpy(io->u.key.key.prime1.data, lpk->u.rsa.prime1.data,
                    lpk->u.rsa.prime1.len);
 
-    nss_ZFreeIf(io->u.key.key.prime2.data);
+    NSS_ZFreeIf(io->u.key.key.prime2.data);
     io->u.key.key.prime2.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.prime2.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.prime2.len);
     io->u.key.key.prime2.size = lpk->u.rsa.prime2.len;
     nsslibc_memcpy(io->u.key.key.prime2.data, lpk->u.rsa.prime2.data,
                    lpk->u.rsa.prime2.len);
 
-    nss_ZFreeIf(io->u.key.key.exponent1.data);
+    NSS_ZFreeIf(io->u.key.key.exponent1.data);
     io->u.key.key.exponent1.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.exponent1.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.exponent1.len);
     io->u.key.key.exponent1.size = lpk->u.rsa.exponent1.len;
     nsslibc_memcpy(io->u.key.key.exponent1.data, lpk->u.rsa.exponent1.data,
                    lpk->u.rsa.exponent1.len);
 
-    nss_ZFreeIf(io->u.key.key.exponent2.data);
+    NSS_ZFreeIf(io->u.key.key.exponent2.data);
     io->u.key.key.exponent2.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.exponent2.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.exponent2.len);
     io->u.key.key.exponent2.size = lpk->u.rsa.exponent2.len;
     nsslibc_memcpy(io->u.key.key.exponent2.data, lpk->u.rsa.exponent2.data,
                    lpk->u.rsa.exponent2.len);
 
-    nss_ZFreeIf(io->u.key.key.coefficient.data);
+    NSS_ZFreeIf(io->u.key.key.coefficient.data);
     io->u.key.key.coefficient.data =
-        (void *) nss_ZAlloc(NULL, lpk->u.rsa.coefficient.len);
+        (void *) NSS_ZAlloc(NULL, lpk->u.rsa.coefficient.len);
     io->u.key.key.coefficient.size = lpk->u.rsa.coefficient.len;
     nsslibc_memcpy(io->u.key.key.coefficient.data,
                    lpk->u.rsa.coefficient.data,
@@ -388,7 +388,7 @@ pem_mdCryptoOperationRSAPriv_Create
         return (NSSCKMDCryptoOperation *) NULL;
     }
 
-    iOperation = nss_ZNEW(NULL, pemInternalCryptoOperationRSAPriv);
+    iOperation = NSS_ZNEW(NULL, pemInternalCryptoOperationRSAPriv);
     if ((pemInternalCryptoOperationRSAPriv *) NULL == iOperation) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDCryptoOperation *) NULL;
@@ -422,7 +422,7 @@ pem_mdCryptoOperationRSAPriv_Destroy
     }
     pem_DestroyPrivateKey(iOperation->lpk);
     iOperation->lpk = NULL;
-    nss_ZFreeIf(iOperation);
+    NSS_ZFreeIf(iOperation);
 }
 
 static CK_ULONG
@@ -611,7 +611,7 @@ pem_mdMechanismRSA_Destroy
     NSSCKFWInstance * fwInstance
 )
 {
-    nss_ZFreeIf(fwMechanism);
+    NSS_ZFreeIf(fwMechanism);
 }
 
 /*

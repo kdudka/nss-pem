@@ -67,9 +67,9 @@ pem_mdFindObjects_Final
     struct pemFOStr *fo = (struct pemFOStr *) mdFindObjects->etc;
     NSSArena *arena = fo->arena;
 
-    nss_ZFreeIf(fo->objs);
-    nss_ZFreeIf(fo);
-    nss_ZFreeIf(mdFindObjects);
+    NSS_ZFreeIf(fo->objs);
+    NSS_ZFreeIf(fo);
+    NSS_ZFreeIf(mdFindObjects);
     if ((NSSArena *) NULL != arena) {
         NSSArena_Destroy(arena);
     }
@@ -232,10 +232,10 @@ ensure_array_capacity(void *array,
             sizeof_one_item * ((*current_items_capacity)+resize_add_number_of_items);
         if (array) {
             PORT_Assert(*current_items_capacity > 0);
-            new_array = nss_ZRealloc(array, new_size_in_bytes);
+            new_array = NSS_ZRealloc(array, new_size_in_bytes);
         } else {
             PORT_Assert(*current_items_capacity == 0);
-            new_array = nss_ZAlloc(NULL, new_size_in_bytes);
+            new_array = NSS_ZAlloc(NULL, new_size_in_bytes);
         }
         (*current_items_capacity) += resize_add_number_of_items;
         return new_array;
@@ -341,7 +341,7 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     plog("collect_objects: Found %d\n", result_array_entries);
     return result_array_entries;
   loser:
-    nss_ZFreeIf(*result_array);
+    NSS_ZFreeIf(*result_array);
     return 0;
 
 }
@@ -374,13 +374,13 @@ pem_FindObjectsInit
         goto loser;
     }
 
-    rv = nss_ZNEW(arena, NSSCKMDFindObjects);
+    rv = NSS_ZNEW(arena, NSSCKMDFindObjects);
     if ((NSSCKMDFindObjects *) NULL == rv) {
         *pError = CKR_HOST_MEMORY;
         goto loser;
     }
 
-    fo = nss_ZNEW(arena, struct pemFOStr);
+    fo = NSS_ZNEW(arena, struct pemFOStr);
     if ((struct pemFOStr *) NULL == fo) {
         *pError = CKR_HOST_MEMORY;
         goto loser;
@@ -401,7 +401,7 @@ pem_FindObjectsInit
         goto loser;
     }
 
-    fo->objs = nss_ZNEWARRAY(arena, pemInternalObject *, fo->n);
+    fo->objs = NSS_ZNEWARRAY(arena, pemInternalObject *, fo->n);
     if ((pemInternalObject **) NULL == fo->objs) {
         *pError = CKR_HOST_MEMORY;
         goto loser;
@@ -410,15 +410,15 @@ pem_FindObjectsInit
     (void) nsslibc_memcpy(fo->objs, temp,
                           sizeof(pemInternalObject *) * fo->n);
 
-    nss_ZFreeIf(temp);
+    NSS_ZFreeIf(temp);
     temp = (pemInternalObject **) NULL;
 
     return rv;
 
   loser:
-    nss_ZFreeIf(temp);
-    nss_ZFreeIf(fo);
-    nss_ZFreeIf(rv);
+    NSS_ZFreeIf(temp);
+    NSS_ZFreeIf(fo);
+    NSS_ZFreeIf(rv);
     if ((NSSArena *) NULL != arena) {
         NSSArena_Destroy(arena);
     }

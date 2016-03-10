@@ -84,7 +84,7 @@ void releasePEMNickname(char *nickname)
 /* Function takes a filename, will use the base name (without directory),
  * and append numbers until a unique nickname is found (or until we give up).
  * The caller owns the returned nickname, which should be destroyed
- * using nss_ZFreeIf().
+ * using NSS_ZFreeIf().
  * In addition, once the object associated to the nickname is freed,
  * the nickname should be released using releasePEMNickname(),
  * in order to remove the entry from the hashtable of unique nicknames.
@@ -119,7 +119,7 @@ char *getUniquePEMNicknameFromFilename(const char *filename, int start_suffix)
         return NULL;
     }
 
-    returned_name = (char *) nss_ZAlloc(NULL,
+    returned_name = (char *) NSS_ZAlloc(NULL,
                         len_basename + max_digits_for_conflict_resolution + 1);
     if (!returned_name)
         return NULL;
@@ -146,7 +146,7 @@ char *getUniquePEMNicknameFromFilename(const char *filename, int start_suffix)
 
     } while (++conflict_suffix <= max_conflict_resolution_attempts);
 
-    nss_ZFreeIf(returned_name);
+    NSS_ZFreeIf(returned_name);
     return NULL;
 }
 
@@ -285,7 +285,7 @@ assignObjectID(pemInternalObject *o, int objid)
     sprintf(id, "%d", objid);
     len = strlen(id) + 1;       /* zero terminate */
     o->id.size = len;
-    o->id.data = nss_ZAlloc(NULL, len);
+    o->id.data = NSS_ZAlloc(NULL, len);
     if (o->id.data == NULL)
         return CKR_HOST_MEMORY;
 
@@ -307,7 +307,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
     SECItem valid;
     SECItem subjkey;
 
-    o = nss_ZNEW(NULL, pemInternalObject);
+    o = NSS_ZNEW(NULL, pemInternalObject);
     if ((pemInternalObject *) NULL == o) {
         return NULL;
     }
@@ -327,7 +327,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
         break;
     }
 
-    o->nickname = (char *) nss_ZAlloc(NULL, strlen(nickname) + 1);
+    o->nickname = (char *) NSS_ZAlloc(NULL, strlen(nickname) + 1);
     if (o->nickname == NULL)
         goto fail;
     strcpy(o->nickname, nickname);
@@ -339,10 +339,10 @@ CreateObject(CK_OBJECT_CLASS objClass,
     o->type = type;
     o->slotID = slotID;
 
-    o->derCert = nss_ZNEW(NULL, SECItem);
+    o->derCert = NSS_ZNEW(NULL, SECItem);
     if (o->derCert == NULL)
         goto fail;
-    o->derCert->data = (void *) nss_ZAlloc(NULL, certDER->len);
+    o->derCert->data = (void *) NSS_ZAlloc(NULL, certDER->len);
     if (o->derCert->data == NULL)
         goto fail;
     o->derCert->len = certDER->len;
@@ -356,45 +356,45 @@ CreateObject(CK_OBJECT_CLASS objClass,
                                         &valid, &subjkey))
             goto fail;
 
-        o->u.cert.subject.data = (void *) nss_ZAlloc(NULL, subject.len);
+        o->u.cert.subject.data = (void *) NSS_ZAlloc(NULL, subject.len);
         if (o->u.cert.subject.data == NULL)
             goto fail;
         o->u.cert.subject.size = subject.len;
         nsslibc_memcpy(o->u.cert.subject.data, subject.data, subject.len);
 
-        o->u.cert.issuer.data = (void *) nss_ZAlloc(NULL, issuer.len);
+        o->u.cert.issuer.data = (void *) NSS_ZAlloc(NULL, issuer.len);
         if (o->u.cert.issuer.data == NULL) {
-            nss_ZFreeIf(o->u.cert.subject.data);
+            NSS_ZFreeIf(o->u.cert.subject.data);
             goto fail;
         }
         o->u.cert.issuer.size = issuer.len;
         nsslibc_memcpy(o->u.cert.issuer.data, issuer.data, issuer.len);
 
-        o->u.cert.serial.data = (void *) nss_ZAlloc(NULL, serial.len);
+        o->u.cert.serial.data = (void *) NSS_ZAlloc(NULL, serial.len);
         if (o->u.cert.serial.data == NULL) {
-            nss_ZFreeIf(o->u.cert.issuer.data);
-            nss_ZFreeIf(o->u.cert.subject.data);
+            NSS_ZFreeIf(o->u.cert.issuer.data);
+            NSS_ZFreeIf(o->u.cert.subject.data);
             goto fail;
         }
         o->u.cert.serial.size = serial.len;
         nsslibc_memcpy(o->u.cert.serial.data, serial.data, serial.len);
         break;
     case CKO_PRIVATE_KEY:
-        o->u.key.key.privateKey = nss_ZNEW(NULL, SECItem);
+        o->u.key.key.privateKey = NSS_ZNEW(NULL, SECItem);
         if (o->u.key.key.privateKey == NULL)
             goto fail;
         o->u.key.key.privateKey->data =
-            (void *) nss_ZAlloc(NULL, keyDER->len);
+            (void *) NSS_ZAlloc(NULL, keyDER->len);
         if (o->u.key.key.privateKey->data == NULL) {
-            nss_ZFreeIf(o->u.key.key.privateKey);
+            NSS_ZFreeIf(o->u.key.key.privateKey);
             goto fail;
         }
 
         /* store deep copy of original key DER so we can compare it later on */
         o->u.key.key.privateKeyOrig = SECITEM_DupItem(keyDER);
         if (o->u.key.key.privateKeyOrig == NULL) {
-            nss_ZFreeIf(o->u.key.key.privateKey->data);
-            nss_ZFreeIf(o->u.key.key.privateKey);
+            NSS_ZFreeIf(o->u.key.key.privateKey->data);
+            NSS_ZFreeIf(o->u.key.key.privateKey);
             goto fail;
         }
 
@@ -409,12 +409,12 @@ CreateObject(CK_OBJECT_CLASS objClass,
 fail:
     if (o) {
         if (o->derCert) {
-            nss_ZFreeIf(o->derCert->data);
-            nss_ZFreeIf(o->derCert);
+            NSS_ZFreeIf(o->derCert->data);
+            NSS_ZFreeIf(o->derCert);
         }
-        nss_ZFreeIf(o->id.data);
-        nss_ZFreeIf(o->nickname);
-        nss_ZFreeIf(o);
+        NSS_ZFreeIf(o->id.data);
+        NSS_ZFreeIf(o->nickname);
+        NSS_ZFreeIf(o);
     }
     return NULL;
 }
@@ -459,7 +459,7 @@ LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
         if (atoi(obj->id.data) != oldKeyIdx)
             continue;
 
-        nss_ZFreeIf(obj->id.data);
+        NSS_ZFreeIf(obj->id.data);
         rv = assignObjectID(obj, newKeyIdx);
         if (CKR_OK != rv)
             return rv;
@@ -518,9 +518,10 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
 
     /* add object to global array */
     if (pem_objs)
-        pem_objs = nss_ZREALLOCARRAY(pem_objs, pemInternalObject *, pem_nobjs+1);
+        pem_objs = NSS_ZRealloc(pem_objs,
+                (pem_nobjs + 1) * sizeof(pemInternalObject *));
     else
-        pem_objs = nss_ZNEWARRAY(NULL, pemInternalObject *, 1);
+        pem_objs = NSS_ZNEWARRAY(NULL, pemInternalObject *, 1);
     if (!pem_objs)
         return NULL;
     pem_objs[pem_nobjs] = io;
@@ -550,7 +551,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
      * as an int (a count) and the declaration as a SECStatus. */
     nobjs = (int) ReadDERFromFile(&objs, certfile, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
     if (nobjs <= 0) {
-        nss_ZFreeIf(objs);
+        NSS_ZFreeIf(objs);
         return CKR_GENERAL_ERROR;
     }
 
@@ -572,7 +573,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                 o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
                                        nickname, 0, slotID, NULL);
             }
-            nss_ZFreeIf(nickname);
+            NSS_ZFreeIf(nickname);
             nickname = NULL;
             if (o == NULL) {
                 error = CKR_GENERAL_ERROR;
@@ -609,7 +610,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
             }
         }
 
-        nss_ZFreeIf(nickname);
+        NSS_ZFreeIf(nickname);
         nickname = NULL;
 
         if (found_error || o == NULL) {
@@ -618,14 +619,14 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
         }
     }
 
-    nss_ZFreeIf(nickname);
-    nss_ZFreeIf(objs);
+    NSS_ZFreeIf(nickname);
+    NSS_ZFreeIf(objs);
     return CKR_OK;
 
   loser:
-    nss_ZFreeIf(objs);
-    nss_ZFreeIf(o);
-    nss_ZFreeIf(nickname);
+    NSS_ZFreeIf(objs);
+    NSS_ZFreeIf(o);
+    NSS_ZFreeIf(nickname);
     return error;
 }
 
@@ -635,19 +636,19 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
 static void*
 myDynPtrListAllocWrapper(size_t bytes)
 {
-    return nss_ZAlloc(NULL, bytes);
+    return NSS_ZAlloc(NULL, bytes);
 }
 
 static void*
 myDynPtrListReallocWrapper(void *ptr, size_t bytes)
 {
-    return nss_ZRealloc(ptr, bytes);
+    return NSS_ZRealloc(ptr, bytes);
 }
 
 static void
 myDynPtrListFreeWrapper(void *ptr)
 {
-    nss_ZFreeIf(ptr);
+    NSS_ZFreeIf(ptr);
 }
 
 /* returns NULL on failure. returns dpl if init was successful. */
@@ -679,7 +680,7 @@ pem_FreeDynPtrList(DynPtrList *dpl)
     for (i = 0; i < dpl->entries; ++i) {
         (*dpl->free_function)(dpl->pointers[i]);
     }
-    nss_ZFreeIf(dpl->pointers);
+    NSS_ZFreeIf(dpl->pointers);
     dpl->pointers = NULL;
     dpl->capacity = 0;
     dpl->entries = 0;
@@ -842,7 +843,7 @@ pem_Finalize
     if (!pemInitialized)
         return;
 
-    nss_ZFreeIf(pem_objs);
+    NSS_ZFreeIf(pem_objs);
     pem_objs = NULL;
     pem_nobjs = 0;
     if (nicknameHashTable)

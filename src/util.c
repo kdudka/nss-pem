@@ -52,10 +52,10 @@
 static int put_object(SECItem *der, SECItem ***derlist, int *count)
 {
     if (*derlist) {
-	*derlist = nss_ZREALLOCARRAY(*derlist, SECItem*, ((*count)+1));
+	*derlist = NSS_ZRealloc(*derlist, (*count + 1) * sizeof(SECItem *));
     } else {
 	*count = 0;
-	*derlist = nss_ZNEWARRAY(NULL, SECItem*, 1);
+	*derlist = NSS_ZNEWARRAY(NULL, SECItem*, 1);
     }
     if (! (*derlist)) {
 	return CKR_HOST_MEMORY;
@@ -70,7 +70,7 @@ static SECItem *AllocItem(SECItem * item, unsigned int len)
     SECItem *result = NULL;
 
     if (item == NULL) {
-	result = nss_ZAlloc(NULL, sizeof(SECItem));
+	result = NSS_ZAlloc(NULL, sizeof(SECItem));
 	if (result == NULL) {
 	    goto loser;
 	}
@@ -81,7 +81,7 @@ static SECItem *AllocItem(SECItem * item, unsigned int len)
 
     result->len = len;
     if (len) {
-        result->data = nss_ZAlloc(NULL, len);
+        result->data = NSS_ZAlloc(NULL, len);
     }
 
     return (result);
@@ -117,7 +117,7 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 
     return SECSuccess;
   loser:
-    nss_ZFreeIf(dst->data);
+    NSS_ZFreeIf(dst->data);
     return SECFailure;
 }
 
@@ -134,7 +134,7 @@ static SECStatus ConvertAsciiToZAllocItem(SECItem *der, const char *ascii)
     if (!NSSBase64_DecodeBuffer(NULL, &tmp, ascii, strlen(ascii)))
 	return rv;
 
-    der->data = nss_ZAlloc(NULL, tmp.len);
+    der->data = NSS_ZAlloc(NULL, tmp.len);
     if (der->data) {
 	rv = SECSuccess;
 	memcpy(der->data, tmp.data, tmp.len);
@@ -226,7 +226,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 			body = c;
 		    }
 		}
-		der = nss_ZAlloc(NULL, sizeof(SECItem));
+		der = NSS_ZAlloc(NULL, sizeof(SECItem));
                 if (der == NULL)
                     goto loser;
 
@@ -257,13 +257,13 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 		    }
 		    der = NULL;
                 } else {
-                    nss_ZFreeIf(der->data);
-                    nss_ZFreeIf(der);
+                    NSS_ZFreeIf(der->data);
+                    NSS_ZFreeIf(der);
 		    der = NULL;
                 }
 	    }			/* while */
 	} else {		/* No headers and footers, translate the blob */
-	    der = nss_ZAlloc(NULL, sizeof(SECItem));
+	    der = NSS_ZAlloc(NULL, sizeof(SECItem));
 	    if (der == NULL)
 		goto loser;
 
@@ -279,7 +279,7 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
 	    der = NULL;
 	}
 
-	nss_ZFreeIf(filedata.data);
+	NSS_ZFreeIf(filedata.data);
         filedata.data = 0;
 	filedata.len = 0;
     } else {
@@ -294,10 +294,10 @@ ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     return count;
 
   loser:
-    nss_ZFreeIf(filedata.data);
+    NSS_ZFreeIf(filedata.data);
     if (der) {
-	nss_ZFreeIf(der->data);
-	nss_ZFreeIf(der);
+	NSS_ZFreeIf(der->data);
+	NSS_ZFreeIf(der);
     }
     PR_Close(inFile);
     return -1;

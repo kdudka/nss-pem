@@ -50,7 +50,7 @@
  */
 
 #define APPEND_LIST_ITEM(item) do { \
-    item->next = nss_ZNEW(NULL, pemObjectListItem); \
+    item->next = NSS_ZNEW(NULL, pemObjectListItem); \
     if (NULL == item->next) \
       goto loser; \
     item = item->next; \
@@ -597,10 +597,10 @@ pem_DestroyInternalObject
             /* recursion of maximal depth 1 */
             pem_DestroyInternalObject(item->io);
 
-            nss_ZFreeIf(item);
+            NSS_ZFreeIf(item);
             item = next;
         }
-        nss_ZFreeIf(io);
+        NSS_ZFreeIf(io);
         return;
     }
 
@@ -613,41 +613,41 @@ pem_DestroyInternalObject
     case pemRaw:
         return;
     case pemCert:
-        nss_ZFreeIf(io->u.cert.key.privateKey);
-        nss_ZFreeIf(io->u.cert.key.pubKey);
+        NSS_ZFreeIf(io->u.cert.key.privateKey);
+        NSS_ZFreeIf(io->u.cert.key.pubKey);
         /* go through */
     case pemTrust:
-        nss_ZFreeIf(io->id.data);
-        nss_ZFreeIf(io->nickname);
-        nss_ZFreeIf(io->derCert->data);
-        nss_ZFreeIf(io->derCert);
+        NSS_ZFreeIf(io->id.data);
+        NSS_ZFreeIf(io->nickname);
+        NSS_ZFreeIf(io->derCert->data);
+        NSS_ZFreeIf(io->derCert);
         if (io->u.cert.subject.size > 0) {
-            nss_ZFreeIf(io->u.cert.subject.data);
+            NSS_ZFreeIf(io->u.cert.subject.data);
         }
         if (io->u.cert.issuer.size > 0) {
-            nss_ZFreeIf(io->u.cert.issuer.data);
+            NSS_ZFreeIf(io->u.cert.issuer.data);
         }
         if (io->u.cert.serial.size > 0) {
-            nss_ZFreeIf(io->u.cert.serial.data);
+            NSS_ZFreeIf(io->u.cert.serial.data);
         }
         break;
     case pemBareKey:
         SECITEM_FreeItem(io->u.key.key.privateKeyOrig, PR_TRUE);
-        nss_ZFreeIf(io->u.key.key.coefficient.data);
-        nss_ZFreeIf(io->u.key.key.exponent2.data);
-        nss_ZFreeIf(io->u.key.key.exponent1.data);
-        nss_ZFreeIf(io->u.key.key.prime2.data);
-        nss_ZFreeIf(io->u.key.key.prime1.data);
-        nss_ZFreeIf(io->u.key.key.privateExponent.data);
-        nss_ZFreeIf(io->u.key.key.exponent.data);
-        nss_ZFreeIf(io->u.key.key.modulus.data);
-        nss_ZFreeIf(io->u.key.key.privateKey->data);
-        nss_ZFreeIf(io->u.key.key.privateKey);
-        nss_ZFreeIf(io->u.key.key.pubKey);
-        nss_ZFreeIf(io->id.data);
-        nss_ZFreeIf(io->nickname);
-        nss_ZFreeIf(io->derCert->data);
-        nss_ZFreeIf(io->derCert);
+        NSS_ZFreeIf(io->u.key.key.coefficient.data);
+        NSS_ZFreeIf(io->u.key.key.exponent2.data);
+        NSS_ZFreeIf(io->u.key.key.exponent1.data);
+        NSS_ZFreeIf(io->u.key.key.prime2.data);
+        NSS_ZFreeIf(io->u.key.key.prime1.data);
+        NSS_ZFreeIf(io->u.key.key.privateExponent.data);
+        NSS_ZFreeIf(io->u.key.key.exponent.data);
+        NSS_ZFreeIf(io->u.key.key.modulus.data);
+        NSS_ZFreeIf(io->u.key.key.privateKey->data);
+        NSS_ZFreeIf(io->u.key.key.privateKey);
+        NSS_ZFreeIf(io->u.key.key.pubKey);
+        NSS_ZFreeIf(io->id.data);
+        NSS_ZFreeIf(io->nickname);
+        NSS_ZFreeIf(io->derCert->data);
+        NSS_ZFreeIf(io->derCert);
 
         /* PORT_Strdup'd in ReadDERFromFile */
         if (io->u.key.ivstring)
@@ -664,7 +664,7 @@ pem_DestroyInternalObject
         /* remove reference to self from the global array */
         pem_objs[io->gobjIndex] = NULL;
 
-    nss_ZFreeIf(io);
+    NSS_ZFreeIf(io);
     return;
 }
 
@@ -865,7 +865,7 @@ pem_mdObject_GetAttributeSize
     /* Don't assume that the returned item is NULL on error */
     if (*pError != CKR_OK) {
         if ((const NSSItem *) NULL != b) {
-            nss_ZFreeIf(b->data);
+            NSS_ZFreeIf(b->data);
         }
         return 0;
     }
@@ -1009,7 +1009,7 @@ pem_GetStringAttribute
         return (char *) NULL;
     }
     /* make sure it is null terminated */
-    str = nss_ZNEWARRAY(NULL, char, item.size + 1);
+    str = NSS_ZNEWARRAY(NULL, char, item.size + 1);
     if ((char *) NULL == str) {
         *pError = CKR_HOST_MEMORY;
         return (char *) NULL;
@@ -1141,16 +1141,16 @@ pem_CreateObject
     }
 #endif
 
-    listObj = nss_ZNEW(NULL, pemInternalObject);
+    listObj = NSS_ZNEW(NULL, pemInternalObject);
     if (NULL == listObj) {
-        nss_ZFreeIf(filename);
+        NSS_ZFreeIf(filename);
         return NULL;
     }
 
-    listItem = listObj->list = nss_ZNEW(NULL, pemObjectListItem);
+    listItem = listObj->list = NSS_ZNEW(NULL, pemObjectListItem);
     if (NULL == listItem) {
-        nss_ZFreeIf(listObj);
-        nss_ZFreeIf(filename);
+        NSS_ZFreeIf(listObj);
+        NSS_ZFreeIf(filename);
         return NULL;
     }
 
@@ -1191,7 +1191,7 @@ pem_CreateObject
                                                     derlist[c], NULL, nickname, 0,
                                                      slotID, NULL);
                 }
-                nss_ZFreeIf(nickname);
+                NSS_ZFreeIf(nickname);
                 if (listItem->io == NULL)
                     goto loser;
             }
@@ -1204,7 +1204,7 @@ pem_CreateObject
             listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
                                              derlist[0], NULL, nickname, objid,
                                              slotID, NULL);
-            nss_ZFreeIf(nickname);
+            NSS_ZFreeIf(nickname);
             if (listItem->io == NULL)
                 goto loser;
         }
@@ -1231,7 +1231,7 @@ pem_CreateObject
             if ((slotID == pem_objs[i]->slotID) && (pem_objs[i]->type == pemCert)) {
                 objid = atoi(pem_objs[i]->id.data);
                 certDER.data =
-                    (void *) nss_ZAlloc(NULL, pem_objs[i]->derCert->len);
+                    (void *) NSS_ZAlloc(NULL, pem_objs[i]->derCert->len);
 
                 if (certDER.data == NULL)
                     goto loser;
@@ -1254,13 +1254,13 @@ pem_CreateObject
         listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
                                           derlist[0], nickname, objid, slotID,
                                           &added);
-        nss_ZFreeIf(nickname);
+        NSS_ZFreeIf(nickname);
         if (listItem->io == NULL)
             goto loser;
 
         listItem->io->u.key.ivstring = ivstring;
         listItem->io->u.key.cipher = cipher;
-        nss_ZFreeIf(certDER.data);
+        NSS_ZFreeIf(certDER.data);
 
         /* If the key was encrypted then free the session to make it appear that
          * the token was removed so we can force a login.
@@ -1288,11 +1288,11 @@ pem_CreateObject
   loser:
 
     for (i = 0; i < nobjs; i++) {
-        nss_ZFreeIf(derlist[i]->data);
-        nss_ZFreeIf(derlist[i]);
+        NSS_ZFreeIf(derlist[i]->data);
+        NSS_ZFreeIf(derlist[i]);
     }
-    nss_ZFreeIf(filename);
-    nss_ZFreeIf(derlist);
+    NSS_ZFreeIf(filename);
+    NSS_ZFreeIf(derlist);
     if ((pemInternalObject *) NULL == listItem->io) {
         pem_DestroyInternalObject(listObj);
         return (NSSCKMDObject *) NULL;

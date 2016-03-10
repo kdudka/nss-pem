@@ -63,7 +63,7 @@ pem_mdToken_GetLabel
     fwSlot = NSSCKFWToken_GetFWSlot(fwToken);
     slotID = nssCKFWSlot_GetSlotID(fwSlot);
 
-    tokenid = (char *) nss_ZAlloc(arena, 256);
+    tokenid = (char *) NSS_ZAlloc(arena, 256);
     snprintf(tokenid, 256, "PEM Token #%ld", slotID);
 
     return (NSSUTF8 *) tokenid;
@@ -263,13 +263,13 @@ pem_NewToken
         }
     }
 
-    mdToken = nss_ZNEW(arena, NSSCKMDToken);
+    mdToken = NSS_ZNEW(arena, NSSCKMDToken);
     if ((NSSCKMDToken *) NULL == mdToken) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDToken *) NULL;
     }
 
-    token = nss_ZNEW(arena, struct pemTokenStr);
+    token = NSS_ZNEW(arena, struct pemTokenStr);
     if ((struct pemTokenStr *) NULL == token) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDToken *) NULL;

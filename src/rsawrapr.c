@@ -86,7 +86,7 @@ pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
     if (input_len != modulus_len)
         goto failure;
 
-    buffer = (unsigned char *) nss_ZAlloc(NULL, modulus_len + 1);
+    buffer = (unsigned char *) NSS_ZAlloc(NULL, modulus_len + 1);
     if (!buffer)
         goto failure;
 
@@ -111,11 +111,11 @@ pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
 
     nsslibc_memcpy(output, buffer + modulus_len - *output_len, *output_len);
 
-    nss_ZFreeIf(buffer);
+    NSS_ZFreeIf(buffer);
     return SECSuccess;
 
   loser:
-    nss_ZFreeIf(buffer);
+    NSS_ZFreeIf(buffer);
   failure:
     return SECFailure;
 }

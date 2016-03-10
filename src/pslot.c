@@ -61,7 +61,7 @@ pem_mdSlot_GetSlotDescription
     arena = NSSCKFWInstance_GetArena(fwInstance, pError);
     slotID = nssCKFWSlot_GetSlotID(fwSlot);
 
-    slotid = (char *) nss_ZAlloc(arena, 256);
+    slotid = (char *) NSS_ZAlloc(arena, 256);
     snprintf(slotid, 256, "PEM Slot #%ld", slotID);
 
     return (NSSUTF8 *) slotid;
@@ -147,7 +147,7 @@ pem_NewSlot
         }
     }
 
-    mdSlot = nss_ZNEW(arena, NSSCKMDSlot);
+    mdSlot = NSS_ZNEW(arena, NSSCKMDSlot);
     if ((NSSCKMDSlot *) NULL == mdSlot) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDSlot *) NULL;

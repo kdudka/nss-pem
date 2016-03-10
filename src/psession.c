@@ -63,7 +63,7 @@ static unsigned char *convert_iv(char *src, int num)
     char conv[3];
     unsigned char *c;
 
-    c = (unsigned char *) nss_ZAlloc(NULL, (num) + 1);
+    c = (unsigned char *) NSS_ZAlloc(NULL, (num) + 1);
     if (c == NULL)
         return NULL;
 
@@ -180,7 +180,7 @@ pem_mdSession_CopyObject
     pemInternalObject *io = (pemInternalObject *) mdOldObject->etc;
 
     /* make a new mdObject */
-    rvmdObject = nss_ZNEW(arena, NSSCKMDObject);
+    rvmdObject = NSS_ZNEW(arena, NSSCKMDObject);
     if ((NSSCKMDObject *) NULL == rvmdObject) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDObject *) NULL;
@@ -266,7 +266,7 @@ pem_mdSession_Login
     make_key(iv, pin->data, pin->size, mykey);
 
     output =
-        (unsigned char *) nss_ZAlloc(NULL,
+        (unsigned char *) NSS_ZAlloc(NULL,
                                      (io->u.key.key.privateKey->len + 1));
     if (!output) {
         rv = CKR_HOST_MEMORY;
@@ -285,14 +285,14 @@ pem_mdSession_Login
                      io->u.key.key.privateKey->len);
     DES_DestroyContext(cx, PR_TRUE);
 
-    nss_ZFreeIf(iv);
+    NSS_ZFreeIf(iv);
     iv = NULL;
     if (rv != SECSuccess) {
         rv = CKR_PIN_INCORRECT;
         goto loser;
     }
 
-    lpk = (NSSLOWKEYPrivateKey *) nss_ZAlloc(NULL,
+    lpk = (NSSLOWKEYPrivateKey *) NSS_ZAlloc(NULL,
                                              sizeof (NSSLOWKEYPrivateKey));
     if (lpk == NULL) {
         rv = CKR_HOST_MEMORY;
@@ -318,10 +318,10 @@ pem_mdSession_Login
     if (rv != SECSuccess)
         goto loser;
 
-    nss_ZFreeIf(io->u.key.key.privateKey->data);
+    NSS_ZFreeIf(io->u.key.key.privateKey->data);
     io->u.key.key.privateKey->len = len - output[len - 1];
     io->u.key.key.privateKey->data =
-        (void *) nss_ZAlloc(NULL, io->u.key.key.privateKey->len);
+        (void *) NSS_ZAlloc(NULL, io->u.key.key.privateKey->len);
     memcpy(io->u.key.key.privateKey->data, output, len - output[len - 1]);
 
     rv = CKR_OK;
@@ -329,8 +329,8 @@ pem_mdSession_Login
   loser:
     if (arena)
         PORT_FreeArena(arena, PR_FALSE);
-    nss_ZFreeIf(iv);
-    nss_ZFreeIf(output);
+    NSS_ZFreeIf(iv);
+    NSS_ZFreeIf(output);
 
     return rv;
 }
@@ -351,7 +351,7 @@ pem_CreateSession
         return (NSSCKMDSession *) NULL;
     }
 
-    rv = nss_ZNEW(arena, NSSCKMDSession);
+    rv = NSS_ZNEW(arena, NSSCKMDSession);
     if ((NSSCKMDSession *) NULL == rv) {
         *pError = CKR_HOST_MEMORY;
         return (NSSCKMDSession *) NULL;

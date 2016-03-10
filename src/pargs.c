@@ -46,7 +46,7 @@
 /*
  * Returns a pointer to a new string, which is a duplicate of the string (subset)
  * pointed to by inStr and of length inLen. The returned pointer can be
- * passed to nss_ZFreeIf. Returns NULL if the new string cannot be allocated.
+ * passed to NSS_ZFreeIf. Returns NULL if the new string cannot be allocated.
  */
 static char *
 pem_StrNdup(const char *instr, PRInt32 inlen)
@@ -62,7 +62,7 @@ pem_StrNdup(const char *instr, PRInt32 inlen)
     if (strlen(instr) < inlen) {
         return NULL;
     }
-    buffer = (char *) nss_ZAlloc(NULL, inlen + 1);
+    buffer = (char *) NSS_ZAlloc(NULL, inlen + 1);
     if (!buffer) {
         return NULL;
     }
