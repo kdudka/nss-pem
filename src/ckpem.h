@@ -1,6 +1,9 @@
 #ifndef CKPEM_H
 #define CKPEM_H
 
+#define USE_UTIL_DIRECTLY
+#include <utilrename.h>
+
 #include <blapit.h>
 #include <nssbase.h>
 #include <nssckmdt.h>           /* must be before <nssckfw.h> */
