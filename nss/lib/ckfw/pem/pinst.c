@@ -534,9 +534,9 @@ CK_RV
 AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                CK_SLOT_ID slotID)
 {
-    pemInternalObject *o;
+    pemInternalObject *o = NULL;
     CK_RV error = 0;
-    int objid, i;
+    int objid, i = 0;
     int nobjs = 0;
     SECItem **objs = NULL;
     char *ivstring = NULL;
