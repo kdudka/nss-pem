@@ -88,21 +88,31 @@ make_key(const unsigned char *salt, const unsigned char *data, int len,
          unsigned char *key)
 {
     int nkey = 0;
-    MD5Context *Md5Ctx = MD5_NewContext();
+    MD5Context *ctx;
     unsigned int digestLen;
     int count, i;
     unsigned char H[25];
+
+    /* obtain MD5 hash object */
+    const SECHashObject *hobj = HASH_GetRawHashObject(HASH_AlgMD5);
+    if (!hobj)
+        return -1;
+
+    /* initialize MD5 context */
+    ctx = hobj->create();
+    if (!ctx)
+        return -1;
 
     nkey = 24;
     count = 0;
 
     while (nkey > 0) {
-        MD5_Begin(Md5Ctx);
+        hobj->begin(ctx);
         if (count)
-            MD5_Update(Md5Ctx, (const unsigned char *) H, digestLen);
-        MD5_Update(Md5Ctx, (const unsigned char *) data, len);
-        MD5_Update(Md5Ctx, (const unsigned char *) salt, 8);
-        MD5_End(Md5Ctx, (unsigned char *) H, &digestLen, sizeof(H));
+            hobj->update(ctx, H, digestLen);
+        hobj->update(ctx, data, len);
+        hobj->update(ctx, salt, 8U);
+        hobj->end(ctx, H, &digestLen, sizeof(H));
 
         i = 0;
         while (nkey && (i != digestLen)) {
@@ -112,7 +122,9 @@ make_key(const unsigned char *salt, const unsigned char *data, int len,
         }
         count++;
     }
-    MD5_DestroyContext(Md5Ctx, PR_TRUE);
+
+    /* destroy MD5 context */
+    hobj->destroy(ctx, /* freeit */PR_TRUE);
 
     return 24;
 }
