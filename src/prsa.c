@@ -73,16 +73,16 @@ typedef struct NSSLOWKEYPrivateKeyInfoStr NSSLOWKEYPrivateKeyInfo;
 #endif
 
 const SEC_ASN1Template pem_RSAPrivateKeyTemplate[] = {
-    {SEC_ASN1_SEQUENCE, 0, NULL, sizeof(pemLOWKEYPrivateKey)} ,
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.version)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.modulus)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.publicExponent)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.privateExponent)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.prime1)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.prime2)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.exponent1)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.exponent2)},
-    {SEC_ASN1_INTEGER, offsetof(pemLOWKEYPrivateKey, u.rsa.coefficient)},
+    {SEC_ASN1_SEQUENCE, 0, NULL, sizeof(NSSLOWKEYPrivateKey)} ,
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.version)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.modulus)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.publicExponent)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.privateExponent)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.prime1)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.prime2)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.exponent1)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.exponent2)},
+    {SEC_ASN1_INTEGER, offsetof(NSSLOWKEYPrivateKey, u.rsa.coefficient)},
     {0}
 };
 
@@ -116,15 +116,15 @@ const SEC_ASN1Template pem_PrivateKeyInfoTemplate[] = {
 };
 
 /* Declarations */
-SECStatus pem_RSA_Sign(pemLOWKEYPrivateKey * key, unsigned char *output,
+SECStatus pem_RSA_Sign(NSSLOWKEYPrivateKey * key, unsigned char *output,
                        unsigned int *outputLen, unsigned int maxOutputLen,
                        unsigned char *input, unsigned int inputLen);
-SECStatus pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
+SECStatus pem_RSA_DecryptBlock(NSSLOWKEYPrivateKey * key,
                                unsigned char *output, unsigned int *outputLen,
                                unsigned int maxOutputLen, unsigned char *input,
                                unsigned int inputLen);
 
-void prepare_low_rsa_priv_key_for_asn1(pemLOWKEYPrivateKey * key)
+void prepare_low_rsa_priv_key_for_asn1(NSSLOWKEYPrivateKey * key)
 {
     key->u.rsa.modulus.type = siUnsignedInteger;
     key->u.rsa.publicExponent.type = siUnsignedInteger;
@@ -137,13 +137,13 @@ void prepare_low_rsa_priv_key_for_asn1(pemLOWKEYPrivateKey * key)
 }
 
 unsigned int
-pem_PrivateModulusLen(pemLOWKEYPrivateKey * privk)
+pem_PrivateModulusLen(NSSLOWKEYPrivateKey * privk)
 {
 
     unsigned char b0;
 
     switch (privk->keyType) {
-    case pemLOWKEYRSAKey:
+    case NSSLOWKEYRSAKey:
         b0 = privk->u.rsa.modulus.data[0];
         return b0 ? privk->u.rsa.modulus.len : privk->u.rsa.modulus.len -
             1;
@@ -155,12 +155,12 @@ pem_PrivateModulusLen(pemLOWKEYPrivateKey * privk)
 
 struct SFTKHashSignInfoStr {
     SECOidTag hashOid;
-    pemLOWKEYPrivateKey *key;
+    NSSLOWKEYPrivateKey *key;
 };
 typedef struct SFTKHashSignInfoStr SFTKHashSignInfo;
 
 void
-pem_DestroyPrivateKey(pemLOWKEYPrivateKey * privk)
+pem_DestroyPrivateKey(NSSLOWKEYPrivateKey * privk)
 {
     if (privk && privk->arena) {
         PORT_FreeArena(privk->arena, PR_TRUE);
@@ -169,10 +169,10 @@ pem_DestroyPrivateKey(pemLOWKEYPrivateKey * privk)
 }
 
 /* decode and parse the rawkey into the lpk structure */
-static pemLOWKEYPrivateKey *
+static NSSLOWKEYPrivateKey *
 pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *modulus)
 {
-    pemLOWKEYPrivateKey *lpk = NULL;
+    NSSLOWKEYPrivateKey *lpk = NULL;
     SECStatus rv = SECFailure;
     NSSLOWKEYPrivateKeyInfo *pki = NULL;
     SECItem *keysrc = NULL;
@@ -203,15 +203,15 @@ pem_getPrivateKey(PLArenaPool *arena, SECItem *rawkey, CK_RV * pError, NSSItem *
         goto done;
     }
 
-    lpk = (pemLOWKEYPrivateKey *) NSS_ZAlloc(NULL,
-                                             sizeof(pemLOWKEYPrivateKey));
+    lpk = (NSSLOWKEYPrivateKey *) NSS_ZAlloc(NULL,
+                                             sizeof(NSSLOWKEYPrivateKey));
     if (lpk == NULL) {
         *pError = CKR_HOST_MEMORY;
         goto done;
     }
 
     lpk->arena = arena;
-    lpk->keyType = pemLOWKEYRSAKey;
+    lpk->keyType = NSSLOWKEYRSAKey;
     prepare_low_rsa_priv_key_for_asn1(lpk);
 
     /* I don't know what this is supposed to accomplish.  We free the old
@@ -253,7 +253,7 @@ pem_PopulateModulusExponent(pemInternalObject * io)
     CK_RV error = CKR_OK;
     const NSSItem *classItem;
     const NSSItem *keyType;
-    pemLOWKEYPrivateKey *lpk = NULL;
+    NSSLOWKEYPrivateKey *lpk = NULL;
     PLArenaPool *arena;
 
     classItem = pem_FetchAttribute(io, CKA_CLASS, &error);
@@ -361,7 +361,7 @@ struct pemInternalCryptoOperationRSAPrivStr
     NSSCKMDCryptoOperation mdOperation;
     NSSCKMDMechanism *mdMechanism;
     pemInternalObject *iKey;
-    pemLOWKEYPrivateKey *lpk;
+    NSSLOWKEYPrivateKey *lpk;
     NSSItem buffer;
 };
 
@@ -381,7 +381,7 @@ pem_mdCryptoOperationRSAPriv_Create
     const NSSItem *classItem;
     const NSSItem *keyType;
     pemInternalCryptoOperationRSAPriv *iOperation;
-    pemLOWKEYPrivateKey *lpk = NULL;
+    NSSLOWKEYPrivateKey *lpk = NULL;
     PLArenaPool *arena;
 
     classItem = pem_FetchAttribute(iKey, CKA_CLASS, pError);

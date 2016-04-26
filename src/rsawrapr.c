@@ -49,7 +49,7 @@
 
 /* XXX Doesn't set error code */
 SECStatus
-pem_RSA_Sign(pemLOWKEYPrivateKey * key,
+pem_RSA_Sign(NSSLOWKEYPrivateKey * key,
              unsigned char *output,
              unsigned int *output_len,
              unsigned int maxOutputLen,
@@ -59,8 +59,8 @@ pem_RSA_Sign(pemLOWKEYPrivateKey * key,
     if (maxOutputLen < pem_PrivateModulusLen(key))
         return SECFailure;
 
-    PORT_Assert(key->keyType == pemLOWKEYRSAKey);
-    if (key->keyType != pemLOWKEYRSAKey)
+    PORT_Assert(key->keyType == NSSLOWKEYRSAKey);
+    if (key->keyType != NSSLOWKEYRSAKey)
         return SECFailure;
 
     return RSA_Sign(&key->u.rsa, output, output_len, maxOutputLen,
@@ -69,7 +69,7 @@ pem_RSA_Sign(pemLOWKEYPrivateKey * key,
 
 /* XXX Doesn't set error code */
 SECStatus
-pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
+pem_RSA_DecryptBlock(NSSLOWKEYPrivateKey * key,
                      unsigned char *output,
                      unsigned int *output_len,
                      unsigned int max_output_len,
@@ -80,8 +80,8 @@ pem_RSA_DecryptBlock(pemLOWKEYPrivateKey * key,
     unsigned int i;
     unsigned char *buffer;
 
-    PORT_Assert(key->keyType == pemLOWKEYRSAKey);
-    if (key->keyType != pemLOWKEYRSAKey)
+    PORT_Assert(key->keyType == NSSLOWKEYRSAKey);
+    if (key->keyType != NSSLOWKEYRSAKey)
         goto failure;
     if (input_len != modulus_len)
         goto failure;

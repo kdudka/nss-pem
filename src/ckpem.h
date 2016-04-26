@@ -14,6 +14,33 @@
 #include <secder.h>
 #include <secoid.h>
 
+#ifdef HAVE_LOWKEYTI_H
+#   include <lowkeyti.h>
+#else
+/*
+ * we are dealing with older NSS that does not include the patch
+ * for https://bugzilla.mozilla.org/show_bug.cgi?id=1263179 yet
+ */
+typedef enum {
+    NSSLOWKEYNullKey = 0,
+    NSSLOWKEYRSAKey = 1,
+    NSSLOWKEYDSAKey = 2,
+    NSSLOWKEYDHKey = 4,
+    NSSLOWKEYECKey = 5
+} NSSLOWKEYType;
+struct NSSLOWKEYPrivateKeyStr {
+    PLArenaPool *arena;
+    NSSLOWKEYType keyType;
+    union {
+        RSAPrivateKey rsa;
+        DSAPrivateKey dsa;
+        DHPrivateKey  dh;
+        ECPrivateKey  ec;
+    } u;
+};
+typedef struct NSSLOWKEYPrivateKeyStr NSSLOWKEYPrivateKey;
+#endif
+
 /* FIXME don't hard-code the number of slots */
 #define NUM_SLOTS 8
 
@@ -187,31 +214,6 @@ pem_CreateMDObject
 
 #define NSS_PEM_ARRAY_SIZE(x) ((sizeof (x))/(sizeof ((x)[0])))
 
-typedef enum {
-    pemLOWKEYNullKey = 0,
-    pemLOWKEYRSAKey = 1,
-    pemLOWKEYDSAKey = 2,
-    pemLOWKEYDHKey = 4,
-    pemLOWKEYECKey = 5
-} pemLOWKEYType;
-
-/*
-** Low Level private key object
-** This is only used by the raw Crypto engines (crypto), keydb (keydb),
-** and PKCS #11. Everyone else uses the high level key structure.
-*/
-struct pemLOWKEYPrivateKeyStr {
-    PLArenaPool *arena;
-    pemLOWKEYType keyType;
-    union {
-        RSAPrivateKey rsa;
-        DSAPrivateKey dsa;
-        DHPrivateKey  dh;
-        ECPrivateKey  ec;
-    } u;
-};
-typedef struct pemLOWKEYPrivateKeyStr pemLOWKEYPrivateKey;
-
 /* Read DER encoded data from a PEM file or a binary (der-encoded) file. */
 /* NOTE: Discrepancy with the the way callers use of the return value as a count
  * Fix this when we sync. up with the cleanup work being done at nss-pem project.
@@ -260,7 +262,7 @@ void pem_DestroyInternalObject (pemInternalObject *io);
 
 
 /* prsa.c */
-unsigned int pem_PrivateModulusLen(pemLOWKEYPrivateKey *privk);
+unsigned int pem_PrivateModulusLen(NSSLOWKEYPrivateKey *privk);
 
 /* ptoken.c */
 NSSCKMDToken * pem_NewToken(NSSCKFWInstance *fwInstance, CK_RV *pError);
