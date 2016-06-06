@@ -1,5 +1,6 @@
 project(libnsspem C)
 cmake_minimum_required(VERSION 2.8)
+enable_testing()
 
 # use pkg-config to detect CFLAGS and LDFLAGS
 find_package(PkgConfig REQUIRED)
@@ -41,4 +42,9 @@ set(MODULES
 add_library(nsspem SHARED ${MODULES})
 target_link_libraries(${CMAKE_REQUIRED_LIBRARIES})
 set_target_properties(nsspem PROPERTIES LINK_FLAGS -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/nsspem.def)
-install(TARGETS nsspem DESTINATION lib)
+
+# install libnsspem.so
+if(NOT DEFINED LIB_INSTALL_DIR)
+  set(LIB_INSTALL_DIR lib)
+endif()
+install(TARGETS nsspem DESTINATION ${LIB_INSTALL_DIR})
