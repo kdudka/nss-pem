@@ -1181,13 +1181,10 @@ pem_CreateObject
             /* Add the certificate. There may be more than one */
             int c;
             for (c = 0; c < nobjs; c++) {
-                char *nickname;
+                char nickname[1024];
                 objid = pem_nobjs + 1;
 
-                nickname = getUniquePEMNicknameFromFilename(filename, c);
-                if (!nickname) {
-                    goto loser;
-                }
+                snprintf(nickname, sizeof nickname, "%s - %d", filename, c);
 
                 if (c) {
                     APPEND_LIST_ITEM(listItem);
@@ -1202,20 +1199,13 @@ pem_CreateObject
                                                     derlist[c], NULL, nickname, 0,
                                                      slotID, NULL);
                 }
-                NSS_ZFreeIf(nickname);
                 if (listItem->io == NULL)
                     goto loser;
             }
         } else {
-            char *nickname = getUniquePEMNicknameFromFilename(filename, 0);
-            if (!nickname) {
-                goto loser;
-            }
-
             listItem->io = AddObjectIfNeeded(CKO_CERTIFICATE, pemCert,
-                                             derlist[0], NULL, nickname, objid,
+                                             derlist[0], NULL, filename, objid,
                                              slotID, NULL);
-            NSS_ZFreeIf(nickname);
             if (listItem->io == NULL)
                 goto loser;
         }
@@ -1224,7 +1214,6 @@ pem_CreateObject
         int i;
         SECItem certDER;
         PRBool added;
-        char *nickname;
 
         nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_FALSE /* keys only */);
         if (nobjs < 1)
@@ -1257,15 +1246,9 @@ pem_CreateObject
         if (objid == -1)
             objid = pem_nobjs + 1;
 
-        nickname = getUniquePEMNicknameFromFilename(filename, 0);
-        if (!nickname) {
-            goto loser;
-        }
-
         listItem->io =  AddObjectIfNeeded(CKO_PRIVATE_KEY, pemBareKey, &certDER,
-                                          derlist[0], nickname, objid, slotID,
+                                          derlist[0], filename, objid, slotID,
                                           &added);
-        NSS_ZFreeIf(nickname);
         if (listItem->io == NULL)
             goto loser;
 

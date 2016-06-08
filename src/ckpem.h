@@ -174,7 +174,6 @@ NSS_EXTERN_DATA pemInternalObject **pem_objs;
 NSS_EXTERN_DATA int pem_nobjs;
 NSS_EXTERN_DATA int token_needsLogin[];
 NSS_EXTERN_DATA NSSCKMDSlot *lastEventSlot;
-NSS_EXTERN_DATA PLHashTable *nicknameHashTable;
 
 struct pemTokenStr {
   PRBool          logged_in;
@@ -262,7 +261,7 @@ PRBool pem_ParseString(const char *inputstring, const char delimiter,
 
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass, pemObjectType type,
-                  SECItem *certDER, SECItem *keyDER, const char *nickname, int objid,
+                  SECItem *certDER, SECItem *keyDER, const char *filename, int objid,
                   CK_SLOT_ID slotID, PRBool *pAdded);
 
 void pem_DestroyInternalObject (pemInternalObject *io);
@@ -278,8 +277,5 @@ NSSCKMDToken * pem_NewToken(NSSCKFWInstance *fwInstance, CK_RV *pError);
 void open_nss_pem_log();
 /* no close_log */
 void plog(const char *fmt, ...);
-
-void freePEMNickname(char *nickname);
-char *getUniquePEMNicknameFromFilename(const char *filename, int start_suffix);
 
 #endif /* CKPEM_H */
