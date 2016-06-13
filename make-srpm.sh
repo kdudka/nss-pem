@@ -87,7 +87,7 @@ Release:    1%{?dist}
 Summary:    PEM file reader for Network Security Services (NSS)
 
 Group:      Applications/Text
-License:    GPLv3+
+License:    MPLv2.0
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/archive/$SRC
 
@@ -109,7 +109,7 @@ make %{?_smp_mflags} VERBOSE=yes
 
 %install
 cd build
-make install DESTDIR="\$RPM_BUILD_ROOT"
+make install DESTDIR=%{buildroot}
 
 %check
 cd build
@@ -117,7 +117,7 @@ ctest %{?_smp_mflags} --output-on-failure
 
 %files
 %{_libdir}/libnsspem.so
-%doc COPYING
+%license COPYING
 EOF
 
 set -v
