@@ -73,11 +73,11 @@ cd "$PKG"                               || die "git clone failed"
                                         || die "'make test' has failed"
 
 SRC_TAR="${NV}.tar"
-SRC="${SRC_TAR}.xz"
+SRC="${SRC_TAR}.gz"
 git archive --prefix="$NV/" --format="tar" HEAD -- . > "$SRC_TAR" \
                                         || die "failed to export sources"
 
-xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
+gzip -c "$SRC_TAR" > "$SRC"             || die "failed to compress sources"
 
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF
@@ -88,8 +88,8 @@ Summary:    PEM file reader for Network Security Services (NSS)
 
 Group:      Applications/Text
 License:    GPLv3+
-URL:        https://git.fedorahosted.org/cgit/codescan-diff.git
-Source0:    https://git.fedorahosted.org/cgit/codescan-diff.git/snapshot/$SRC
+URL:        https://github.com/kdudka/nss-pem
+Source0:    https://github.com/kdudka/nss-pem/archive/$SRC
 
 BuildRequires: cmake
 BuildRequires: nss-pkcs11-devel
