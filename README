@@ -1,3 +1,9 @@
+nss-pem
+=======
+PEM file reader for Network Security Services (NSS), implemented as a PKCS#11
+module.
+
+
 Build Instructions
 ------------------
 mkdir build

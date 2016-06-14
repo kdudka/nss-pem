@@ -87,12 +87,15 @@ Release:    1%{?dist}
 Summary:    PEM file reader for Network Security Services (NSS)
 
 Group:      Applications/Text
-License:    MPLv2.0
+License:    MPLv1.1
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/archive/$SRC
 
 BuildRequires: cmake
 BuildRequires: nss-pkcs11-devel
+
+# TODO: make the nss-pem pkg conflict with all nss builds with bundled nss-pem
+# Conflicts: nss%{?_isa} < XXX
 
 %description
 PEM file reader for Network Security Services (NSS), implemented as a PKCS#11
