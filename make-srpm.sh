@@ -73,11 +73,11 @@ cd "$PKG"                               || die "git clone failed"
                                         || die "'make test' has failed"
 
 SRC_TAR="${NV}.tar"
-SRC="${SRC_TAR}.gz"
+SRC="${SRC_TAR}.xz"
 git archive --prefix="$NV/" --format="tar" HEAD -- . > "$SRC_TAR" \
                                         || die "failed to export sources"
 
-gzip -c "$SRC_TAR" > "$SRC"             || die "failed to compress sources"
+xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
 
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF
@@ -88,7 +88,7 @@ Summary:    PEM file reader for Network Security Services (NSS)
 
 License:    MPLv1.1
 URL:        https://github.com/kdudka/nss-pem
-Source0:    https://github.com/kdudka/nss-pem/archive/$SRC
+Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
 BuildRequires: cmake
 BuildRequires: nss-pkcs11-devel
