@@ -8,6 +8,11 @@ pkg_check_modules(NSS REQUIRED "nss")
 include_directories(${NSS_INCLUDE_DIRS})
 link_directories(${NSS_LIBRARY_DIRS})
 
+# some distros (e.g. Gentoo Linux) put <blapi.h> to a separate directory
+if(EXISTS "${NSS_INCLUDEDIR}/private/")
+    include_directories("${NSS_INCLUDEDIR}/private")
+endif()
+
 include(CheckIncludeFile)
 set(CMAKE_REQUIRED_INCLUDES ${NSS_INCLUDE_DIRS})
 check_include_file(lowkeyti.h LOWKEYTI_H)
