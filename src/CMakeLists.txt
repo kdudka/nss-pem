@@ -13,6 +13,11 @@ if(EXISTS "${NSS_INCLUDEDIR}/private/")
     include_directories("${NSS_INCLUDEDIR}/private")
 endif()
 
+# some distros (e.g. Fedora) put <nssck.api> to a separate directory
+if(EXISTS "${NSS_INCLUDEDIR}/templates/")
+    include_directories("${NSS_INCLUDEDIR}/templates")
+endif()
+
 include(CheckIncludeFile)
 set(CMAKE_REQUIRED_INCLUDES ${NSS_INCLUDE_DIRS})
 check_include_file(lowkeyti.h LOWKEYTI_H)

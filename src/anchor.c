@@ -47,4 +47,4 @@
 
 #define MODULE_NAME pem
 #define INSTANCE_NAME (NSSCKMDInstance *)&pem_mdInstance
-#include <templates/nssck.api>
+#include <nssck.api>
