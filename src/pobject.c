@@ -1116,7 +1116,6 @@ pem_CreateObject
     /* What slot are we adding the object to? */
     fwSlot = NSSCKFWSession_GetFWSlot(fwSession);
     if ((NSSCKFWSlot *) NULL == fwSlot) {
-        *pError = CKR_ATTRIBUTE_VALUE_INVALID;
         *pError = CKR_GENERAL_ERROR;
         return (NSSCKMDObject *) NULL;
 
