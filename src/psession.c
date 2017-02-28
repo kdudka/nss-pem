@@ -272,6 +272,10 @@ pem_mdSession_Login
     }
 
     /* Convert the IV from hex into an array of bytes */
+    if (NULL == io->u.key.ivstring) {
+        rv = CKR_PIN_INCORRECT;
+        goto loser;
+    }
     iv = convert_iv(io->u.key.ivstring, 8);
 
     /* Convert the PIN and IV into a DES key */
