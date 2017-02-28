@@ -1095,7 +1095,7 @@ pem_CreateObject
 #if 0
     pemToken *token;
 #endif
-    int cipher;
+    int cipher = 0;
     char *ivstring = NULL;
     pemInternalObject *listObj = NULL;
     pemObjectListItem *listItem = NULL;
