@@ -1,29 +1,50 @@
-#!/bin/sh
+#!/bin/bash
+set -x
 SELF="$0"
 TAG="$1"
 TOKEN="$2"
+
+NAME="nss-pem"
+NV="${TAG}"
 
 usage() {
     printf "Usage: %s TAG TOKEN\n" "$SELF" >&2
     exit 1
 }
 
+die() {
+    printf "%s: error: %s\n" "$SELF" >&2
+    exit 1
+}
+
 # check arguments
-test -e ".git/refs/tags/$TAG" || usage
+test "$TAG" = "$(git describe --tags "$TAG")" || usage
 test -n "$TOKEN" || usage
 
+# dump a tarball
+SRC_TAR="${NV}.tar"
+git archive --prefix="$NV/" --format="tar" HEAD -- . > "$SRC_TAR" \
+                                        || die "failed to export sources"
+
+# produce .tar.gz
+TAR_GZ="${NV}.tar.gz"
+gzip -c "$SRC_TAR" > "$TAR_GZ"          || die "failed to create $TAR_GZ"
+
+# produce .tar.xz
+TAR_XZ="${NV}.tar.xz"
+xz -c "$SRC_TAR" > "$TAR_XZ"            || die "failed to create $TAR_XZ"
+
 # file to store response from GitHub API
-JSON="./${TAG}-github-relase.js"
+JSON="./${NV}-github-relase.js"
 
 # create a new release on GitHub
-set -x
-curl https://api.github.com/repos/kdudka/nss-pem/releases \
+curl "https://api.github.com/repos/${USER}/${NAME}/releases" \
     -o "$JSON" --fail --verbose \
     --header "Authorization: token $TOKEN" \
     --data '{
     "tag_name": "'"$TAG"'",
     "target_commitish": "master",
-    "name": "'"$TAG"'",
+    "name": "'"$NV"'",
     "draft": false,
     "prerelease": false
 }' || exit $?
@@ -33,16 +54,13 @@ UPLOAD_URL="$(grep '^ *"upload_url": "' "$JSON" \
     | sed -e 's/^ *"upload_url": "//' -e 's/{.*}.*$//')"
 grep '^https://uploads.github.com/.*/assets$' <<< "$UPLOAD_URL" || exit $?
 
-# file to store the release tarball locally
-TAR_XZ="${TAG}.tar.xz"
+# upload both .tar.gz and .tar.xz
+for comp in gzip xz; do
+    file="${NV}.tar.${comp:0:2}"
+    curl "${UPLOAD_URL}?name=${file}" \
+        -T "$file" --fail --verbose \
+        --header "Authorization: token $TOKEN" \
+        --header "Content-Type: application/x-${comp}" \
+	|| exit $?
+done
 
-# export sources from the local git repository
-git archive --prefix="${TAG}/" --format="tar" "${TAG}" -- . \
-    | xz -c > "$TAR_XZ" \
-    || exit $?
-
-# upload the sources to GitHub download page
-curl "${UPLOAD_URL}?name=${TAR_XZ}" \
-    -T "$TAR_XZ" --fail --verbose \
-    --header "Authorization: token $TOKEN" \
-    --header 'Content-Type: application/x-xz'
