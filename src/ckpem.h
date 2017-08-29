@@ -259,10 +259,8 @@ pem_CreateMDObject
 #define NSS_PEM_ARRAY_SIZE(x) ((sizeof (x))/(sizeof ((x)[0])))
 
 /* Read DER encoded data from a PEM file or a binary (der-encoded) file. */
-/* NOTE: Discrepancy with the the way callers use of the return value as a count
- * Fix this when we sync. up with the cleanup work being done at nss-pem project.
- */
-SECStatus ReadDERFromFile(SECItem ***derlist, char *filename, PRBool ascii, int *cipher, char **ivstring, PRBool certsonly);
+int ReadDERFromFile(SECItem ***derlist, char *filename, PRBool ascii,
+                    int *cipher, char **ivstring, PRBool certsonly);
 
 /* Fetch an attribute of the specified type. */
 const NSSItem * pem_FetchAttribute ( pemInternalObject *io, CK_ATTRIBUTE_TYPE type, CK_RV *pError);

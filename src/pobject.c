@@ -1165,11 +1165,8 @@ pem_CreateObject
     }
 
     if (objClass == CKO_CERTIFICATE) {
-        /* TODO: Fix discrepancy between our usage of the return value as
-         * as an int and the declaration as a SECStatus. Typecasting as a
-         * temporary workaround.
-         */
-        nobjs = (int) ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_TRUE /* certs only */);
+        nobjs = ReadDERFromFile(&derlist, filename, /* ascii */ PR_TRUE,
+                                &cipher, &ivstring, /* certs only */ PR_TRUE);
         if (nobjs < 1)
             goto loser;
 
@@ -1214,7 +1211,8 @@ pem_CreateObject
         SECItem certDER;
         PRBool added;
 
-        nobjs = ReadDERFromFile(&derlist, filename, PR_TRUE, &cipher, &ivstring, PR_FALSE /* keys only */);
+        nobjs = ReadDERFromFile(&derlist, filename, /* ascii */ PR_TRUE,
+                                &cipher, &ivstring, /* keys only */ PR_FALSE);
         if (nobjs < 1)
             goto loser;
 
