@@ -91,6 +91,7 @@ URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
 BuildRequires: cmake
+BuildRequires: gcc
 BuildRequires: nss-pkcs11-devel
 
 %description
