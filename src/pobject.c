@@ -1220,7 +1220,7 @@ pem_CreateObject
 
         /* Brute force: find the id of the certificate, if any, in this slot */
         objid = -1;
-        for (i = 0; i < pem_nobjs; i++) {
+        for (i = pem_nobjs - 1; 0 <= i; i--) {
             if (NULL == pem_objs[i])
                 continue;
 
@@ -1240,6 +1240,7 @@ pem_CreateObject
             memcpy(certDER.data,
                     pem_objs[i]->derCert->data,
                     pem_objs[i]->derCert->len);
+            break;
         }
 
         /* We're just adding a key, we'll assume the cert is next */
