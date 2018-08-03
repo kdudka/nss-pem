@@ -1206,7 +1206,6 @@ pem_CreateObject
                 goto loser;
         }
     } else if (objClass == CKO_PRIVATE_KEY) {
-        /* Brute force: find the id of the certificate, if any, in this slot */
         int i;
         SECItem certDER;
         PRBool added;
@@ -1219,24 +1218,28 @@ pem_CreateObject
         certDER.len = 0; /* in case there is no equivalent cert */
         certDER.data = NULL;
 
+        /* Brute force: find the id of the certificate, if any, in this slot */
         objid = -1;
         for (i = 0; i < pem_nobjs; i++) {
             if (NULL == pem_objs[i])
                 continue;
 
-            if ((slotID == pem_objs[i]->slotID) && (pem_objs[i]->type == pemCert)) {
-                objid = atoi(pem_objs[i]->id.data);
-                certDER.data =
-                    (void *) NSS_ZAlloc(NULL, pem_objs[i]->derCert->len);
+            if (slotID != pem_objs[i]->slotID)
+                continue;
 
-                if (certDER.data == NULL)
-                    goto loser;
+            if (pem_objs[i]->type != pemCert)
+                continue;
 
-                certDER.len = pem_objs[i]->derCert->len;
-                memcpy(certDER.data,
-                        pem_objs[i]->derCert->data,
-                        pem_objs[i]->derCert->len);
-            }
+            objid = atoi(pem_objs[i]->id.data);
+            certDER.data = NSS_ZAlloc(NULL, pem_objs[i]->derCert->len);
+
+            if (certDER.data == NULL)
+                goto loser;
+
+            certDER.len = pem_objs[i]->derCert->len;
+            memcpy(certDER.data,
+                    pem_objs[i]->derCert->data,
+                    pem_objs[i]->derCert->len);
         }
 
         /* We're just adding a key, we'll assume the cert is next */
