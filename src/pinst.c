@@ -421,6 +421,18 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
              */
             LinkSharedKeyObject(pem_nobjs, i);
 
+            if (CKO_CERTIFICATE == objClass) {
+                const int ref = atoi(curObj->id.data);
+                if (0 < ref && ref < pem_nobjs && !pem_objs[ref]) {
+                    /* The certificate we are going to reuse refers to an
+                     * object that has already been removed.  Make it refer
+                     * to the object that will be added next (private key).
+                     */
+                    NSS_ZFreeIf(curObj->id.data);
+                    assignObjectID(curObj, pem_nobjs);
+                }
+            }
+
             plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
             curObj->refCount ++;
             return curObj;
