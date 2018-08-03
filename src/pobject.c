@@ -1230,7 +1230,11 @@ pem_CreateObject
             if (pem_objs[i]->type != pemCert)
                 continue;
 
-            objid = atoi(pem_objs[i]->id.data);
+            if (atoi(pem_objs[i]->id.data) != pem_nobjs)
+                /* not a certificate that refers to the key being added */
+                continue;
+
+            objid = pem_nobjs;
             certDER.data = NSS_ZAlloc(NULL, pem_objs[i]->derCert->len);
 
             if (certDER.data == NULL)
