@@ -402,16 +402,17 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
 
     /* first look for the object in pem_objs, it might be already there */
     for (i = 0; i < pem_nobjs; i++) {
-        if (NULL == pem_objs[i])
+        pemInternalObject *const curObj = pem_objs[i];
+        if (NULL == curObj)
             continue;
 
         /* Comparing DER encodings is dependable and frees the PEM module
          * from having to require clients to provide unique nicknames.
          */
-        if ((pem_objs[i]->objClass == objClass)
-                && (pem_objs[i]->type == type)
-                && (pem_objs[i]->slotID == slotID)
-                && derEncodingsMatch(objClass, pem_objs[i], certDER, keyDER)) {
+        if ((curObj->objClass == objClass)
+                && (curObj->type == type)
+                && (curObj->slotID == slotID)
+                && derEncodingsMatch(objClass, curObj, certDER, keyDER)) {
 
             /* While adding a client certificate we (wrongly?) assumed that the
              * key object will follow right after the cert object.  However, if
@@ -421,8 +422,8 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
             LinkSharedKeyObject(pem_nobjs, i);
 
             plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
-            pem_objs[i]->refCount ++;
-            return pem_objs[i];
+            curObj->refCount ++;
+            return curObj;
         }
     }
 
