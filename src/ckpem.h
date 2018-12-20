@@ -39,6 +39,8 @@
 #ifndef CKPEM_H
 #define CKPEM_H
 
+#include "list.h"
+
 #define USE_UTIL_DIRECTLY
 #include <utilrename.h>
 
@@ -197,8 +199,13 @@ struct pemInternalObjectStr {
   char            *nickname;
   NSSCKMDObject   mdObject;
   CK_SLOT_ID      slotID;
-  CK_ULONG        gobjIndex;
   int             refCount;
+
+  /* all internal objects are linked in a global list */
+  struct list_head gl_list;
+
+  /* we represent sparse array as list but keep its elements indexed */
+  long            arrayIdx;
 
   /* used by pem_mdFindObjects_Next */
   CK_BBOOL        extRef;
@@ -208,7 +215,7 @@ struct pemInternalObjectStr {
   pemObjectListItem *list;
 };
 
-NSS_EXTERN_DATA pemInternalObject **pem_objs;
+NSS_EXTERN_DATA struct list_head pem_objs;
 NSS_EXTERN_DATA int pem_nobjs;
 NSS_EXTERN_DATA int token_needsLogin[];
 NSS_EXTERN_DATA NSSCKMDSlot *lastEventSlot;

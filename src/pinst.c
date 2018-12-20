@@ -50,7 +50,7 @@
 
 static PRBool pemInitialized = PR_FALSE;
 
-pemInternalObject **pem_objs;
+LIST_HEAD(pem_objs);
 int pem_nobjs = 0;
 int token_needsLogin[NUM_SLOTS];
 NSSCKMDSlot *lastEventSlot;
@@ -362,13 +362,9 @@ derEncodingsMatch(CK_OBJECT_CLASS objClass, pemInternalObject * obj,
 static CK_RV
 LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
 {
-    int i;
-    for (i = 0; i < pem_nobjs; i++) {
+    pemInternalObject *obj;
+    list_for_each_entry(obj, &pem_objs, gl_list) {
         CK_RV rv;
-        pemInternalObject *obj = pem_objs[i];
-        if (NULL == obj)
-            continue;
-
         if (atoi(obj->id.data) != oldKeyIdx)
             continue;
 
@@ -381,13 +377,26 @@ LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
     return CKR_OK;
 }
 
+/* return pointer to the internal object with given arrayIdx */
+static pemInternalObject *
+FindObjectByArrayIdx(const long arrayIdx)
+{
+    pemInternalObject *obj;
+
+    list_for_each_entry(obj, &pem_objs, gl_list)
+        if (arrayIdx == obj->arrayIdx)
+            return obj;
+
+    return NULL;
+}
+
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                   pemObjectType type, SECItem * certDER,
                   SECItem * keyDER, const char *filename,
                   int objid, CK_SLOT_ID slotID, PRBool *pAdded)
 {
-    int i;
+    pemInternalObject *curObj;
 
     const char *nickname = strrchr(filename, '/');
     if (nickname
@@ -401,11 +410,7 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
         *pAdded = PR_FALSE;
 
     /* first look for the object in pem_objs, it might be already there */
-    for (i = 0; i < pem_nobjs; i++) {
-        pemInternalObject *const curObj = pem_objs[i];
-        if (NULL == curObj)
-            continue;
-
+    list_for_each_entry(curObj, &pem_objs, gl_list) {
         /* Comparing DER encodings is dependable and frees the PEM module
          * from having to require clients to provide unique nicknames.
          */
@@ -419,11 +424,11 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
              * the key object is shared by multiple client certificates, such
              * an assumption does not hold.  We have to update the references.
              */
-            LinkSharedKeyObject(pem_nobjs, i);
+            LinkSharedKeyObject(pem_nobjs, curObj->arrayIdx);
 
             if (CKO_CERTIFICATE == objClass) {
                 const int ref = atoi(curObj->id.data);
-                if (0 < ref && ref < pem_nobjs && !pem_objs[ref]) {
+                if (0 < ref && ref < pem_nobjs && !FindObjectByArrayIdx(ref)) {
                     /* The certificate we are going to reuse refers to an
                      * object that has already been removed.  Make it refer
                      * to the object that will be added next (private key).
@@ -433,7 +438,8 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                 }
             }
 
-            plog("AddObjectIfNeeded: re-using internal object #%i\n", i);
+            plog("AddObjectIfNeeded: re-using internal object #%li\n",
+                 curObj->arrayIdx);
             curObj->refCount ++;
             return curObj;
         }
@@ -448,18 +454,9 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
     /* initialize pointers to functions */
     pem_CreateMDObject(NULL, io, NULL);
 
-    io->gobjIndex = pem_nobjs;
-
-    /* add object to global array */
-    if (pem_objs)
-        pem_objs = NSS_ZRealloc(pem_objs,
-                (pem_nobjs + 1) * sizeof(pemInternalObject *));
-    else
-        pem_objs = NSS_ZNEWARRAY(NULL, pemInternalObject *, 1);
-    if (!pem_objs)
-        return NULL;
-    pem_objs[pem_nobjs] = io;
-    pem_nobjs++;
+    /* add object to global list */
+    io->arrayIdx = pem_nobjs++;
+    list_add_tail(&io->gl_list, &pem_objs);
 
     if (pAdded)
         *pAdded = PR_TRUE;
@@ -748,8 +745,7 @@ pem_Finalize
     if (!pemInitialized)
         return;
 
-    NSS_ZFreeIf(pem_objs);
-    pem_objs = NULL;
+    INIT_LIST_HEAD(&pem_objs);
     pem_nobjs = 0;
 
     PR_AtomicSet(&pemInitialized, PR_FALSE);

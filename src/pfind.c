@@ -253,12 +253,13 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     size_t result_array_capacity = 0;
     pemObjectType type = pemRaw;
     CK_OBJECT_CLASS objClass = pem_GetObjectClass(pTemplate, ulAttributeCount);
+    pemInternalObject *obj = NULL;
 
     *pError = CKR_OK;
 
     plog("collect_objects slot #%ld, ", slotID);
     plog("%d attributes, ", ulAttributeCount);
-    plog("%d objects to look through.\n", pem_nobjs);
+    plog("%d objects created in total.\n", pem_nobjs);
     plog("Looking for: ");
     /*
      * now determine type of the object
@@ -299,22 +300,18 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     }
 
     /* find objects */
-    for (i = 0; i < pem_nobjs; i++) {
+    list_for_each_entry(obj, &pem_objs, gl_list) {
         int match = 1; /* matches type if type not specified */
-        if (NULL == pem_objs[i])
-            continue;
-
-        plog("  %d type = %d\n", i, pem_objs[i]->type);
+        plog("  %d type = %d\n", i, obj->type);
         if (type != pemAll) {
             /* type specified - must match given type */
-            match = (type == pem_objs[i]->type);
+            match = (type == obj->type);
         }
         if (match) {
-            match = (slotID == pem_objs[i]->slotID) &&
-                (CK_TRUE == pem_match(pTemplate, ulAttributeCount, pem_objs[i]));
+            match = (slotID == obj->slotID) &&
+                (CK_TRUE == pem_match(pTemplate, ulAttributeCount, obj));
         }
         if (match) {
-            pemInternalObject *o = pem_objs[i];
             pemInternalObject **new_result_array = (pemInternalObject **)
                 ensure_array_capacity(*result_array,
                                       &result_array_capacity,
@@ -328,7 +325,7 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
             if (*result_array != new_result_array) {
                 *result_array = new_result_array;
             }
-            (*result_array)[ result_array_entries ] = o;
+            (*result_array)[ result_array_entries ] = obj;
             result_array_entries++;
         }
     }
