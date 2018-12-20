@@ -241,7 +241,7 @@ pem_mdSession_Login
     NSSLOWKEYPrivateKey *lpk = NULL;
     PLArenaPool *arena;
     SECItem plain;
-    int i;
+    pemInternalObject *curObj;
 
     fwSlot = NSSCKFWToken_GetFWSlot(fwToken);
     slotID = NSSCKFWSlot_GetSlotID(fwSlot);
@@ -256,12 +256,9 @@ pem_mdSession_Login
     token_needsLogin[slotID - 1] = PR_FALSE;
 
     /* Find the right key object */
-    for (i = 0; i < pem_nobjs; i++) {
-        if (NULL == pem_objs[i])
-            continue;
-
-        if ((slotID == pem_objs[i]->slotID) && (pem_objs[i]->type == pemBareKey)) {
-            io = pem_objs[i];
+    list_for_each_entry(curObj, &pem_objs, gl_list) {
+        if ((slotID == curObj->slotID) && (curObj->type == pemBareKey)) {
+            io = curObj;
             break;
         }
     }

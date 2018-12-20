@@ -672,10 +672,8 @@ pem_DestroyInternalObject
         return;
     }
 
-    if (NULL != pem_objs)
-        /* remove reference to self from the global array */
-        pem_objs[io->gobjIndex] = NULL;
-
+    /* remove self from the global list */
+    list_del(&io->gl_list);
     NSS_ZFreeIf(io);
     return;
 }
@@ -1206,7 +1204,7 @@ pem_CreateObject
                 goto loser;
         }
     } else if (objClass == CKO_PRIVATE_KEY) {
-        int i;
+        pemInternalObject *curObj;
         SECItem certDER;
         PRBool added;
 
@@ -1220,30 +1218,27 @@ pem_CreateObject
 
         /* Brute force: find the id of the certificate, if any, in this slot */
         objid = -1;
-        for (i = pem_nobjs - 1; 0 <= i; i--) {
-            if (NULL == pem_objs[i])
+        list_for_each_entry_reverse(curObj, &pem_objs, gl_list) {
+            if (slotID != curObj->slotID)
                 continue;
 
-            if (slotID != pem_objs[i]->slotID)
+            if (curObj->type != pemCert)
                 continue;
 
-            if (pem_objs[i]->type != pemCert)
-                continue;
-
-            if (atoi(pem_objs[i]->id.data) != pem_nobjs)
+            if (atoi(curObj->id.data) != pem_nobjs)
                 /* not a certificate that refers to the key being added */
                 continue;
 
             objid = pem_nobjs;
-            certDER.data = NSS_ZAlloc(NULL, pem_objs[i]->derCert->len);
+            certDER.data = NSS_ZAlloc(NULL, curObj->derCert->len);
 
             if (certDER.data == NULL)
                 goto loser;
 
-            certDER.len = pem_objs[i]->derCert->len;
+            certDER.len = curObj->derCert->len;
             memcpy(certDER.data,
-                    pem_objs[i]->derCert->data,
-                    pem_objs[i]->derCert->len);
+                    curObj->derCert->data,
+                    curObj->derCert->len);
             break;
         }
 
