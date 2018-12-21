@@ -259,7 +259,7 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
 
     plog("collect_objects slot #%ld, ", slotID);
     plog("%d attributes, ", ulAttributeCount);
-    plog("%d objects created in total.\n", pem_nobjs);
+    plog("%ld objects created in total.\n", pem_nobjs);
     plog("Looking for: ");
     /*
      * now determine type of the object

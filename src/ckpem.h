@@ -216,7 +216,7 @@ struct pemInternalObjectStr {
 };
 
 NSS_EXTERN_DATA struct list_head pem_objs;
-NSS_EXTERN_DATA int pem_nobjs;
+NSS_EXTERN_DATA long pem_nobjs;
 NSS_EXTERN_DATA int token_needsLogin[];
 NSS_EXTERN_DATA NSSCKMDSlot *lastEventSlot;
 
@@ -304,7 +304,7 @@ PRBool pem_ParseString(const char *inputstring, const char delimiter,
 
 pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass, pemObjectType type,
-                  SECItem *certDER, SECItem *keyDER, const char *filename, int objid,
+                  SECItem *certDER, SECItem *keyDER, const char *filename, long objid,
                   CK_SLOT_ID slotID, PRBool *pAdded);
 
 void pem_DestroyInternalObject (pemInternalObject *io);

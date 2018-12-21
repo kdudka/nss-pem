@@ -51,7 +51,7 @@
 static PRBool pemInitialized = PR_FALSE;
 
 LIST_HEAD(pem_objs);
-int pem_nobjs = 0;
+long pem_nobjs = 0L;
 int token_needsLogin[NUM_SLOTS];
 NSSCKMDSlot *lastEventSlot;
 
@@ -182,12 +182,12 @@ GetCertFields(unsigned char *cert, int cert_length,
 }
 
 static CK_RV
-assignObjectID(pemInternalObject *o, int objid)
+assignObjectID(pemInternalObject *o, const long objid)
 {
-    char id[16];
+    char id[24];
     int len;
 
-    sprintf(id, "%d", objid);
+    sprintf(id, "%ld", objid);
     len = strlen(id) + 1;       /* zero terminate */
     o->id.size = len;
     o->id.data = NSS_ZAlloc(NULL, len);
@@ -202,7 +202,7 @@ static pemInternalObject *
 CreateObject(CK_OBJECT_CLASS objClass,
              pemObjectType type, SECItem * certDER,
              SECItem * keyDER, const char *filename,
-             int objid, CK_SLOT_ID slotID)
+             long objid, CK_SLOT_ID slotID)
 {
     pemInternalObject *o;
     SECItem subject;
@@ -226,17 +226,17 @@ CreateObject(CK_OBJECT_CLASS objClass,
 
     switch (objClass) {
     case CKO_CERTIFICATE:
-        plog("Creating cert nick %s id %d in slot %ld\n", nickname, objid, slotID);
+        plog("Creating cert nick %s id %ld in slot %ld\n", nickname, objid, slotID);
         memset(&o->u.cert, 0, sizeof(o->u.cert));
         break;
     case CKO_PRIVATE_KEY:
-        plog("Creating key id %d in slot %ld\n", objid, slotID);
+        plog("Creating key id %ld in slot %ld\n", objid, slotID);
         memset(&o->u.key, 0, sizeof(o->u.key));
         /* more unique nicknames - https://bugzilla.redhat.com/689031#c66 */
         nickname = filename;
         break;
     case CKO_NETSCAPE_TRUST:
-        plog("Creating trust nick %s id %d in slot %ld\n", nickname, objid, slotID);
+        plog("Creating trust nick %s id %ld in slot %ld\n", nickname, objid, slotID);
         memset(&o->u.trust, 0, sizeof(o->u.trust));
         break;
     }
@@ -360,12 +360,12 @@ derEncodingsMatch(CK_OBJECT_CLASS objClass, pemInternalObject * obj,
 }
 
 static CK_RV
-LinkSharedKeyObject(int oldKeyIdx, int newKeyIdx)
+LinkSharedKeyObject(const long oldKeyIdx, const long newKeyIdx)
 {
     pemInternalObject *obj;
     list_for_each_entry(obj, &pem_objs, gl_list) {
         CK_RV rv;
-        if (atoi(obj->id.data) != oldKeyIdx)
+        if (atol(obj->id.data) != oldKeyIdx)
             continue;
 
         NSS_ZFreeIf(obj->id.data);
@@ -394,7 +394,7 @@ pemInternalObject *
 AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
                   pemObjectType type, SECItem * certDER,
                   SECItem * keyDER, const char *filename,
-                  int objid, CK_SLOT_ID slotID, PRBool *pAdded)
+                  long objid, CK_SLOT_ID slotID, PRBool *pAdded)
 {
     pemInternalObject *curObj;
 
@@ -427,7 +427,7 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
             LinkSharedKeyObject(pem_nobjs, curObj->arrayIdx);
 
             if (CKO_CERTIFICATE == objClass) {
-                const int ref = atoi(curObj->id.data);
+                const long ref = atol(curObj->id.data);
                 if (0 < ref && ref < pem_nobjs && !FindObjectByArrayIdx(ref)) {
                     /* The certificate we are going to reuse refers to an
                      * object that has already been removed.  Make it refer
@@ -471,7 +471,8 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
 {
     pemInternalObject *o = NULL;
     CK_RV error = 0;
-    int objid, i = 0;
+    long objid;
+    int i = 0;
     SECItem **objs = NULL;
     char *ivstring = NULL;
     int cipher;
@@ -746,7 +747,7 @@ pem_Finalize
         return;
 
     INIT_LIST_HEAD(&pem_objs);
-    pem_nobjs = 0;
+    pem_nobjs = 0L;
 
     PR_AtomicSet(&pemInitialized, PR_FALSE);
 }
