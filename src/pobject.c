@@ -1089,7 +1089,7 @@ pem_CreateObject
     SECItem **derlist = NULL;
     int nobjs = 0;
     int i;
-    int objid;
+    long objid;
 #if 0
     pemToken *token;
 #endif
@@ -1225,7 +1225,7 @@ pem_CreateObject
             if (curObj->type != pemCert)
                 continue;
 
-            if (atoi(curObj->id.data) != pem_nobjs)
+            if (atol(curObj->id.data) != pem_nobjs)
                 /* not a certificate that refers to the key being added */
                 continue;
 
