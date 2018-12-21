@@ -195,6 +195,7 @@ assignObjectID(pemInternalObject *o, const long objid)
         return CKR_HOST_MEMORY;
 
     memcpy(o->id.data, id, len);
+    o->objid = objid;
     return CKR_OK;
 }
 
@@ -365,7 +366,7 @@ LinkSharedKeyObject(const long oldKeyIdx, const long newKeyIdx)
     pemInternalObject *obj;
     list_for_each_entry(obj, &pem_objs, gl_list) {
         CK_RV rv;
-        if (atol(obj->id.data) != oldKeyIdx)
+        if (obj->objid != oldKeyIdx)
             continue;
 
         NSS_ZFreeIf(obj->id.data);
@@ -427,7 +428,7 @@ AddObjectIfNeeded(CK_OBJECT_CLASS objClass,
             LinkSharedKeyObject(pem_nobjs, curObj->arrayIdx);
 
             if (CKO_CERTIFICATE == objClass) {
-                const long ref = atol(curObj->id.data);
+                const long ref = curObj->objid;
                 if (0 < ref && ref < pem_nobjs && !FindObjectByArrayIdx(ref)) {
                     /* The certificate we are going to reuse refers to an
                      * object that has already been removed.  Make it refer

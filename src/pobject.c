@@ -1225,7 +1225,7 @@ pem_CreateObject
             if (curObj->type != pemCert)
                 continue;
 
-            if (atol(curObj->id.data) != pem_nobjs)
+            if (curObj->objid != pem_nobjs)
                 /* not a certificate that refers to the key being added */
                 continue;
 
