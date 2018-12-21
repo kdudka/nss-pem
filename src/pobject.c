@@ -1218,7 +1218,7 @@ pem_CreateObject
 
         /* Brute force: find the id of the certificate, if any, in this slot */
         objid = -1;
-        list_for_each_entry(curObj, &pem_objs, gl_list) {
+        list_for_each_entry_reverse(curObj, &pem_objs, gl_list) {
             if (slotID != curObj->slotID)
                 continue;
 
