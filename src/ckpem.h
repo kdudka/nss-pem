@@ -194,6 +194,7 @@ struct pemInternalObjectStr {
   CK_OBJECT_CLASS objClass;
   NSSItem         hashKey;
   NSSItem         id;
+  long            objid;
   unsigned char   hashKeyData[128];
   SECItem         *derCert;
   char            *nickname;
