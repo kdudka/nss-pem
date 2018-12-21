@@ -6,7 +6,7 @@
 #define READ_ONCE(x) (x)
 #define WRITE_ONCE(dst, src) (dst = (src))
 #define typeof(x) __typeof__(x)
-# define POISON_POINTER_DELTA 0
+#define POISON_POINTER_DELTA 0
 
 /* following code is taken from <linux/list.h> of v4.20-rc7-202-g1d51b4b1d3f2 */
 
