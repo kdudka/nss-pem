@@ -248,7 +248,6 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
                 pemInternalObject *** result_array,
                 CK_RV * pError, CK_SLOT_ID slotID)
 {
-    PRUint32 i;
     size_t result_array_entries = 0;
     size_t result_array_capacity = 0;
     pemObjectType type = pemRaw;
@@ -302,7 +301,7 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
     /* find objects */
     list_for_each_entry(obj, &pem_objs, gl_list) {
         int match = 1; /* matches type if type not specified */
-        plog("  %d type = %d\n", i, obj->type);
+        plog("  %ld type = %d\n", obj->arrayIdx, obj->type);
         if (type != pemAll) {
             /* type specified - must match given type */
             match = (type == obj->type);
