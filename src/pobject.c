@@ -1163,8 +1163,8 @@ pem_CreateObject
     }
 
     if (objClass == CKO_CERTIFICATE) {
-        nobjs = ReadDERFromFile(&derlist, filename, /* ascii */ PR_TRUE,
-                                &cipher, &ivstring, /* certs only */ PR_TRUE);
+        nobjs = ReadDERFromFile(&derlist, filename, &cipher, &ivstring,
+                                /* certs only */ PR_TRUE);
         if (nobjs < 1)
             goto loser;
 
@@ -1208,8 +1208,8 @@ pem_CreateObject
         SECItem certDER;
         PRBool added;
 
-        nobjs = ReadDERFromFile(&derlist, filename, /* ascii */ PR_TRUE,
-                                &cipher, &ivstring, /* keys only */ PR_FALSE);
+        nobjs = ReadDERFromFile(&derlist, filename, &cipher, &ivstring,
+                                /* keys only */ PR_FALSE);
         if (nobjs < 1)
             goto loser;
 

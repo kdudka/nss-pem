@@ -478,8 +478,8 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
     char *ivstring = NULL;
     int cipher;
 
-    int nobjs = ReadDERFromFile(&objs, certfile, /* ascii */ PR_TRUE, &cipher,
-                                &ivstring, /* certs only */ PR_TRUE);
+    int nobjs = ReadDERFromFile(&objs, certfile, &cipher, &ivstring,
+                                /* certs only */ PR_TRUE);
     if (nobjs <= 0) {
         NSS_ZFreeIf(objs);
         return CKR_GENERAL_ERROR;
@@ -514,8 +514,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
 
         if (o != NULL && keyfile != NULL) { /* add the private key */
             SECItem **keyobjs = NULL;
-            int kobjs = ReadDERFromFile(&keyobjs, keyfile, /* ascii */ PR_TRUE,
-                                        &cipher, &ivstring,
+            int kobjs = ReadDERFromFile(&keyobjs, keyfile, &cipher, &ivstring,
                                         /*certs only */ PR_FALSE);
             if (kobjs < 1) {
                 found_error = PR_TRUE;
