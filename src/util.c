@@ -45,6 +45,7 @@
 #include <nssb64.h>
 #include <nssbase.h>
 #include <secerr.h>
+#include <secitem.h>
 #include <secpkcs7.h>
 
 #include <stdarg.h>
@@ -65,58 +66,36 @@ static int put_object(SECItem *der, SECItem ***derlist, int *count)
     return 0;
 }
 
-static SECItem *AllocItem(SECItem * item, unsigned int len)
-{
-    SECItem *result = NULL;
-
-    if (item == NULL) {
-	result = NSS_ZAlloc(NULL, sizeof(SECItem));
-	if (result == NULL) {
-	    goto loser;
-	}
-    } else {
-	PORT_Assert(item->data == NULL);
-	result = item;
-    }
-
-    result->len = len;
-    if (len) {
-        result->data = NSS_ZAlloc(NULL, len);
-    }
-
-    return (result);
-
-  loser:
-    return (NULL);
-}
-
 static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 {
-    PRFileInfo info;
-    PRInt32 numBytes;
-    PRStatus prStatus;
+    static const PRInt32 chunk = 65536;
+    PRInt32 bytesReadTotal = 0;
 
-    if (!dst)
-	return SECFailure;
+    for (;;) {
+	PRInt32 bytesReadNow;
+	PRInt32 newSize = bytesReadTotal + chunk;
+	if (newSize < chunk)
+	    /* int overflow */
+	    break;
 
-    prStatus = PR_GetOpenFileInfo(src, &info);
+	if (SECITEM_ReallocItemV2(NULL, dst, newSize) != SECSuccess)
+	    /* out of memory */
+	    break;
 
-    if (prStatus != PR_SUCCESS || info.type == PR_FILE_DIRECTORY) {
-	return SECFailure;
+	bytesReadNow = PR_Read(src, dst->data + bytesReadTotal, chunk);
+	if (bytesReadNow < 0)
+	    /* read error */
+	    break;
+
+	if (bytesReadNow == 0) {
+	    /* EOF */
+	    dst->len = bytesReadTotal;
+	    return SECSuccess;
+	}
+
+	bytesReadTotal += bytesReadNow;
     }
 
-    /* XXX workaround for 3.1, not all utils zero dst before sending */
-    dst->data = 0;
-    if (!AllocItem(dst, info.size+1))
-	goto loser;
-
-    numBytes = PR_Read(src, dst->data, info.size);
-    if (numBytes != info.size) {
-	goto loser;
-    }
-
-    return SECSuccess;
-  loser:
     NSS_ZFreeIf(dst->data);
     return SECFailure;
 }
@@ -156,7 +135,7 @@ int ReadDERFromFile(SECItem *** derlist, char *filename, int *cipher,
     SECItem filedata;
     char *c, *iv;
 
-    filedata.data = NULL;
+    memset(&filedata, 0, sizeof filedata);
 
     inFile = PR_Open(filename, PR_RDONLY, 0);
     if (!inFile)
@@ -277,14 +256,12 @@ int ReadDERFromFile(SECItem *** derlist, char *filename, int *cipher,
 	der = NULL;
     }
 
-    NSS_ZFreeIf(filedata.data);
-    filedata.data = 0;
-    filedata.len = 0;
+    free(filedata.data);
     PR_Close(inFile);
     return count;
 
   loser:
-    NSS_ZFreeIf(filedata.data);
+    free(filedata.data);
     if (der) {
 	NSS_ZFreeIf(der->data);
 	NSS_ZFreeIf(der);
