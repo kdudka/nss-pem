@@ -145,8 +145,8 @@ static SECStatus ConvertAsciiToZAllocItem(SECItem *der, const char *ascii)
 }
 
 /* returns count of objects read, or -1 on error */
-int ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
-		    int *cipher, char **ivstring, PRBool certsonly)
+int ReadDERFromFile(SECItem *** derlist, char *filename, int *cipher,
+		    char **ivstring, PRBool certsonly)
 {
     SECStatus rv;
     PRFileDesc *inFile;
@@ -162,133 +162,124 @@ int ReadDERFromFile(SECItem *** derlist, char *filename, PRBool ascii,
     if (!inFile)
 	return -1;
 
-    if (ascii) {
-	/* First convert ascii to binary */
-	char *asc, *body;
+    /* First convert ascii to binary */
+    char *asc, *body;
 
-	/* Read in ascii data */
-	rv = FileToItem(&filedata, inFile);
-	if (rv != SECSuccess) {
-	    PR_Close(inFile);
-	    return -1;
-	}
-	asc = (char *) filedata.data;
-	if (!asc) {
-	    PR_Close(inFile);
-	    return -1;
-	}
+    /* Read in ascii data */
+    rv = FileToItem(&filedata, inFile);
+    if (rv != SECSuccess) {
+	PR_Close(inFile);
+	return -1;
+    }
+    asc = (char *) filedata.data;
+    if (!asc) {
+	PR_Close(inFile);
+	return -1;
+    }
 
-	/* check for headers and trailers and remove them */
-	if (strstr(asc, "-----BEGIN") != NULL) {
-            int key = 0;
-	    while ((asc) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
-                key = 0;
-		if ((strncmp(body, "-----BEGIN RSA PRIVATE KEY", 25) == 0) ||
-		    (strncmp(body, "-----BEGIN PRIVATE KEY", 21) == 0)) {
-                    key = 1;
-		    c = body;
+    /* check for headers and trailers and remove them */
+    if (strstr(asc, "-----BEGIN") != NULL) {
+	int key = 0;
+	while ((asc) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
+	    key = 0;
+	    if ((strncmp(body, "-----BEGIN RSA PRIVATE KEY", 25) == 0) ||
+		(strncmp(body, "-----BEGIN PRIVATE KEY", 21) == 0)) {
+		key = 1;
+		c = body;
+		body = strchr(body, '\n');
+		if (NULL == body)
+		    goto loser;
+		body++;
+		if (strncmp(body, "Proc-Type: 4,ENCRYPTED", 22) == 0) {
 		    body = strchr(body, '\n');
 		    if (NULL == body)
 			goto loser;
 		    body++;
-		    if (strncmp(body, "Proc-Type: 4,ENCRYPTED", 22) == 0) {
-			body = strchr(body, '\n');
-			if (NULL == body)
+		    if (strncmp(body, "DEK-Info: ", 10) == 0) {
+			body += 10;
+			c = body;
+			body = strchr(body, ',');
+			if (body == NULL)
 			    goto loser;
-			body++;
-			if (strncmp(body, "DEK-Info: ", 10) == 0) {
-			    body += 10;
-			    c = body;
-			    body = strchr(body, ',');
-			    if (body == NULL)
-				goto loser;
-			    *body = '\0';
-			    if (!strcasecmp(c, "DES-EDE3-CBC"))
-				*cipher = NSS_DES_EDE3_CBC;
-			    else if (!strcasecmp(c, "DES-CBC"))
-				*cipher = NSS_DES_CBC;
-			    else {
-				*cipher = -1;
-				goto loser;
-			    }
-			    body++;
-			    iv = body;
-			    body = strchr(body, '\n');
-			    if (body == NULL)
-				goto loser;
-			    *body = '\0';
-			    body++;
-			    *ivstring = PORT_Strdup(iv);
+			*body = '\0';
+			if (!strcasecmp(c, "DES-EDE3-CBC"))
+			    *cipher = NSS_DES_EDE3_CBC;
+			else if (!strcasecmp(c, "DES-CBC"))
+			    *cipher = NSS_DES_CBC;
+			else {
+			    *cipher = -1;
+			    goto loser;
 			}
-		    } else {	/* Else the private key is not encrypted */
-			*cipher = 0;
-			body = c;
+			body++;
+			iv = body;
+			body = strchr(body, '\n');
+			if (body == NULL)
+			    goto loser;
+			*body = '\0';
+			body++;
+			*ivstring = PORT_Strdup(iv);
 		    }
+		} else {	/* Else the private key is not encrypted */
+		    *cipher = 0;
+		    body = c;
 		}
-		der = NSS_ZAlloc(NULL, sizeof(SECItem));
-                if (der == NULL)
-                    goto loser;
-
-		char *trailer = NULL;
-		asc = body;
-		body = strchr(body, '\n');
-		if (!body)
-		    body = strchr(asc, '\r');	/* maybe this is a MAC file */
-		if (body) {
-		    trailer = strstr(++body, "-----END");
-		}
-		if (trailer != NULL) {
-		    asc = trailer + 1;
-		    *trailer = '\0';
-		} else {
-		    goto loser;
-		}
-
-		/* Convert to binary */
-		rv = ConvertAsciiToZAllocItem(der, body);
-		if (rv) {
-		    goto loser;
-		}
-                if ((certsonly && !key) || (!certsonly && key)) {
-		    error = put_object(der, derlist, &count);
-		    if (error) {
-			goto loser;
-		    }
-		    der = NULL;
-                } else {
-                    NSS_ZFreeIf(der->data);
-                    NSS_ZFreeIf(der);
-		    der = NULL;
-                }
-	    }			/* while */
-	} else {		/* No headers and footers, translate the blob */
+	    }
 	    der = NSS_ZAlloc(NULL, sizeof(SECItem));
 	    if (der == NULL)
 		goto loser;
 
-	    rv = ConvertAsciiToZAllocItem(der, asc);
+	    char *trailer = NULL;
+	    asc = body;
+	    body = strchr(body, '\n');
+	    if (!body)
+		body = strchr(asc, '\r');	/* maybe this is a MAC file */
+	    if (body) {
+		trailer = strstr(++body, "-----END");
+	    }
+	    if (trailer != NULL) {
+		asc = trailer + 1;
+		*trailer = '\0';
+	    } else {
+		goto loser;
+	    }
+
+	    /* Convert to binary */
+	    rv = ConvertAsciiToZAllocItem(der, body);
 	    if (rv) {
 		goto loser;
 	    }
-	    /* NOTE: This code path has never been tested. */
-	    error = put_object(der, derlist, &count);
-	    if (error) {
-		goto loser;
+	    if ((certsonly && !key) || (!certsonly && key)) {
+		error = put_object(der, derlist, &count);
+		if (error) {
+		    goto loser;
+		}
+		der = NULL;
+	    } else {
+		NSS_ZFreeIf(der->data);
+		NSS_ZFreeIf(der);
+		der = NULL;
 	    }
-	    der = NULL;
-	}
+	}			/* while */
+    } else {		/* No headers and footers, translate the blob */
+	der = NSS_ZAlloc(NULL, sizeof(SECItem));
+	if (der == NULL)
+	    goto loser;
 
-	NSS_ZFreeIf(filedata.data);
-        filedata.data = 0;
-	filedata.len = 0;
-    } else {
-	/* Read in binary der */
-	rv = FileToItem(der, inFile);
-	if (rv != SECSuccess) {
-	    PR_Close(inFile);
-	    return -1;
+	rv = ConvertAsciiToZAllocItem(der, asc);
+	if (rv) {
+	    goto loser;
 	}
+	/* NOTE: This code path has never been tested. */
+	error = put_object(der, derlist, &count);
+	if (error) {
+	    goto loser;
+	}
+	der = NULL;
     }
+
+    NSS_ZFreeIf(filedata.data);
+    filedata.data = 0;
+    filedata.len = 0;
     PR_Close(inFile);
     return count;
 
