@@ -68,7 +68,7 @@ static int put_object(SECItem *der, SECItem ***derlist, int *count)
 
 static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 {
-    static const PRInt32 chunk = 16384;
+    static const PRInt32 chunk = 65536;
     PRInt32 bytesReadTotal = 0;
 
     for (;;) {
