@@ -96,7 +96,7 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 	bytesReadTotal += bytesReadNow;
     }
 
-    NSS_ZFreeIf(dst->data);
+    free(dst->data);
     return SECFailure;
 }
 
