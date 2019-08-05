@@ -1,0 +1,5 @@
+---
+specfile_path: nss-pem.spec
+downstream_package_name: nss-pem
+actions:
+  post-upstream-clone: curl -s -o nss-pem.spec https://src.fedoraproject.org/rpms/nss-pem/raw/master/f/nss-pem.spec
