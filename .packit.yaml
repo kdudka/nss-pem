@@ -1,5 +1,6 @@
 ---
 specfile_path: nss-pem.spec
 downstream_package_name: nss-pem
+current_version_command: ["sh", "-c", "git describe --tags | sed -r -e \"s|nss-pem-||\" -e \"s|([^-]+)-([^-]+)-([^-]+)\\$|\\1.\\2.$(git log --pretty='%cd' --date=iso -1 | tr -d ':-' | tr ' ' . | cut -d. -f 1,2).\\3|\""]
 actions:
   post-upstream-clone: curl -s -o nss-pem.spec https://src.fedoraproject.org/rpms/nss-pem/raw/master/f/nss-pem.spec
