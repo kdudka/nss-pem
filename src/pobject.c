@@ -1081,7 +1081,6 @@ pem_CreateObject
 )
 {
     CK_OBJECT_CLASS objClass;
-    CK_BBOOL isToken;
     NSSCKFWSlot *fwSlot;
     CK_SLOT_ID slotID;
     CK_BBOOL cacert;
@@ -1090,26 +1089,10 @@ pem_CreateObject
     int nobjs = 0;
     int i;
     long objid;
-#if 0
-    pemToken *token;
-#endif
     int cipher = 0;
     char *ivstring = NULL;
     pemInternalObject *listObj = NULL;
     pemObjectListItem *listItem = NULL;
-
-    /*
-     * only create token objects
-     */
-    isToken = pem_GetBoolAttribute(CKA_TOKEN, pTemplate,
-                                   ulAttributeCount, pError);
-    if (CKR_OK != *pError) {
-        return (NSSCKMDObject *) NULL;
-    }
-    if (!isToken) {
-        *pError = CKR_ATTRIBUTE_VALUE_INVALID;
-        return (NSSCKMDObject *) NULL;
-    }
 
     /* What slot are we adding the object to? */
     fwSlot = NSSCKFWSession_GetFWSlot(fwSession);
@@ -1119,10 +1102,6 @@ pem_CreateObject
 
     }
     slotID = NSSCKFWSlot_GetSlotID(fwSlot);
-
-#if 0
-    token = (pemToken *) mdToken->etc;
-#endif
 
     /*
      * only create keys and certs.
