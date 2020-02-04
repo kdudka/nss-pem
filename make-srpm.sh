@@ -54,7 +54,7 @@ VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
 
 BRANCH="`git rev-parse --abbrev-ref HEAD`"
 test -n "$BRANCH" || die "failed to get current branch name"
-test master = "${BRANCH}" || VER="${VER}.${BRANCH}"
+test master = "${BRANCH}" || VER="${VER}.${BRANCH//-/_}"
 test -z "`git diff HEAD`" || VER="${VER}.dirty"
 
 NV="${PKG}-${VER}"
@@ -92,9 +92,6 @@ Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
 BuildRequires: cmake
 BuildRequires: nss-pkcs11-devel
-
-# TODO: make the nss-pem pkg conflict with all nss builds with bundled nss-pem
-# Conflicts: nss%{?_isa} < XXX
 
 %description
 PEM file reader for Network Security Services (NSS), implemented as a PKCS#11
