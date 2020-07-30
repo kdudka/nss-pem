@@ -104,12 +104,12 @@ module.
 %build
 mkdir build
 cd build
-%cmake ../src
-make %{?_smp_mflags} VERBOSE=yes
+%cmake ../src -B.
+%make_build
 
 %install
 cd build
-make install DESTDIR=%{buildroot}
+%make_install
 
 %check
 cd build
