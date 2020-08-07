@@ -276,18 +276,18 @@ collect_objects(CK_ATTRIBUTE_PTR pTemplate,
         type = pemBareKey;
         plog("CKO_PRIVATE_KEY\n");
         break;
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         type = pemTrust;
-        plog("CKO_NETSCAPE_TRUST\n");
+        plog("CKO_NSS_TRUST\n");
         break;
-    case CKO_NETSCAPE_CRL:
-        plog("CKO_NETSCAPE_CRL\n");
+    case CKO_NSS_CRL:
+        plog("CKO_NSS_CRL\n");
         goto done;
-    case CKO_NETSCAPE_SMIME:
-        plog("CKO_NETSCAPE_SMIME\n");
+    case CKO_NSS_SMIME:
+        plog("CKO_NSS_SMIME\n");
         goto done;
-    case CKO_NETSCAPE_BUILTIN_ROOT_LIST:
-        plog("CKO_NETSCAPE_BUILTIN_ROOT_LIST\n");
+    case CKO_NSS_BUILTIN_ROOT_LIST:
+        plog("CKO_NSS_BUILTIN_ROOT_LIST\n");
         goto done;
     case CK_INVALID_HANDLE:
         type = pemAll; /* look through all objectclasses - ignore the type field */

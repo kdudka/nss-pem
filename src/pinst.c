@@ -236,7 +236,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
         /* more unique nicknames - https://bugzilla.redhat.com/689031#c66 */
         nickname = filename;
         break;
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         plog("Creating trust nick %s id %ld in slot %ld\n", nickname, objid, slotID);
         memset(&o->u.trust, 0, sizeof(o->u.trust));
         break;
@@ -265,7 +265,7 @@ CreateObject(CK_OBJECT_CLASS objClass,
 
     switch (objClass) {
     case CKO_CERTIFICATE:
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         if (SECSuccess != GetCertFields(o->derCert->data, o->derCert->len,
                                         &issuer, &serial, &derSN, &subject,
                                         &valid, &subjkey))
@@ -344,7 +344,7 @@ derEncodingsMatch(CK_OBJECT_CLASS objClass, pemInternalObject * obj,
 
     switch (objClass) {
     case CKO_CERTIFICATE:
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         result = SECITEM_CompareItem(obj->derCert, certDER);
         break;
 
@@ -497,7 +497,7 @@ AddCertificate(char *certfile, char *keyfile, PRBool cacert,
                                    nickname, 0, slotID, NULL);
             if (o != NULL) {
                 /* Add the CA trust object */
-                o = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust, objs[i], NULL,
+                o = AddObjectIfNeeded(CKO_NSS_TRUST, pemTrust, objs[i], NULL,
                                        nickname, 0, slotID, NULL);
             }
             if (o == NULL) {

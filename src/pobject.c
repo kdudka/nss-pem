@@ -149,8 +149,8 @@ static const CK_KEY_TYPE ckk_rsa = CKK_RSA;
 static const CK_OBJECT_CLASS cko_certificate = CKO_CERTIFICATE;
 static const CK_OBJECT_CLASS cko_private_key = CKO_PRIVATE_KEY;
 static const CK_OBJECT_CLASS cko_public_key = CKO_PUBLIC_KEY;
-static const CK_OBJECT_CLASS cko_trust = CKO_NETSCAPE_TRUST;
-static const CK_TRUST ckt_netscape_trusted = CKT_NETSCAPE_TRUSTED_DELEGATOR;
+static const CK_OBJECT_CLASS cko_trust = CKO_NSS_TRUST;
+static const CK_TRUST ckt_netscape_trusted = CKT_NSS_TRUSTED_DELEGATOR;
 static const NSSItem pem_trueItem = {
     (void *) &ck_true, (PRUint32) sizeof(CK_BBOOL)
 };
@@ -578,7 +578,7 @@ pem_FetchAttribute
         return pem_FetchCertAttribute(io, type);
     case CKO_PRIVATE_KEY:
         return pem_FetchPrivKeyAttribute(io, type, pError);
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         return pem_FetchTrustAttribute(io, type);
     case CKO_PUBLIC_KEY:
         return pem_FetchPubKeyAttribute(io, type);
@@ -775,7 +775,7 @@ pem_mdObject_GetAttributeCount
         return pubKeyAttrsCount;
     case CKO_PRIVATE_KEY:
         return privKeyAttrsCount;
-    case CKO_NETSCAPE_TRUST:
+    case CKO_NSS_TRUST:
         return trustAttrsCount;
     default:
         break;
@@ -1168,7 +1168,7 @@ pem_CreateObject
                 if (listItem->io != NULL) {
                     /* Add the trust object */
                     APPEND_LIST_ITEM(listItem);
-                    listItem->io = AddObjectIfNeeded(CKO_NETSCAPE_TRUST, pemTrust,
+                    listItem->io = AddObjectIfNeeded(CKO_NSS_TRUST, pemTrust,
                                                     derlist[c], NULL, nickname, 0,
                                                      slotID, NULL);
                 }
