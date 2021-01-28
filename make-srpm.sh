@@ -61,7 +61,7 @@ NV="${PKG}-${VER}"
 printf "\n%s: preparing a release of \033[1;32m%s\033[0m\n\n" "$SELF" "$NV"
 
 TMP="`mktemp -d`"
-trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
+trap "rm -rf '$TMP'" EXIT
 cd "$TMP" >/dev/null || die "mktemp failed"
 
 # clone the repository
@@ -92,7 +92,11 @@ Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
 BuildRequires: cmake
 BuildRequires: gcc
+BuildRequires: make
 BuildRequires: nss-pkcs11-devel
+
+# require at least the version of nss that nss-pem was built against (#1428965)
+Requires: nss%{?_isa} >= %(nss-config --version 2>/dev/null || echo 0)
 
 %description
 PEM file reader for Network Security Services (NSS), implemented as a PKCS#11
@@ -120,7 +124,6 @@ ctest %{?_smp_mflags} --output-on-failure
 %license COPYING
 EOF
 
-set -v
 rpmbuild -bs "$SPEC"                            \
     --define "_sourcedir ."                     \
     --define "_specdir ."                       \
