@@ -10,3 +10,10 @@ mkdir build
 cd build
 cmake ../src
 make -j
+
+
+License
+-------
+list.h is distributed under the GPL-2.0 license.  Other source files can be
+distributed under the terms of any one of the MPL 1.1, GPL 2.0, or LGPL 2.1
+licenses.  See COPYING.GPL and COPYING.MPL for details.

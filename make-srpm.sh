@@ -121,7 +121,7 @@ ctest %{?_smp_mflags} --output-on-failure
 
 %files
 %{_libdir}/libnsspem.so
-%license COPYING
+%license COPYING.{GPL,MPL}
 EOF
 
 rpmbuild -bs "$SPEC"                            \
