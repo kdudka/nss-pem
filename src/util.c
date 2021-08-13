@@ -70,10 +70,13 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 {
     static const PRInt32 chunk = 65536;
     PRInt32 bytesReadTotal = 0;
-
     for (;;) {
 	PRInt32 bytesReadNow;
-	PRInt32 newSize = bytesReadTotal + chunk;
+	/* round up to next chunk size. note bytesReadTotal will usually be
+	   one byte short of a full chunk (hence we add one). further, in
+	   the event of an incomplete read on the prior pass (including due
+	   to EOF) we will avoid moving to a larger size buffer. */
+	PRInt32 newSize = (bytesReadTotal + chunk + 1) / chunk * chunk;
 	if (newSize < chunk)
 	    /* int overflow */
 	    break;
@@ -82,13 +85,17 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 	    /* out of memory */
 	    break;
 
-	bytesReadNow = PR_Read(src, dst->data + bytesReadTotal, chunk);
+	/* subtract 1 to leave room for null terminator */
+	bytesReadNow = PR_Read(src, dst->data + bytesReadTotal,
+			       newSize - bytesReadTotal - 1);
+
 	if (bytesReadNow < 0)
 	    /* read error */
 	    break;
 
 	if (bytesReadNow == 0) {
 	    /* EOF */
+	    dst->data[bytesReadTotal] = '\0';
 	    dst->len = bytesReadTotal;
 	    return SECSuccess;
 	}
@@ -142,7 +149,7 @@ int ReadDERFromFile(SECItem *** derlist, char *filename, int *cipher,
 	return -1;
 
     /* First convert ascii to binary */
-    char *asc, *body;
+    char *asc, *body, *bufferEnd;
 
     /* Read in ascii data */
     rv = FileToItem(&filedata, inFile);
@@ -155,11 +162,12 @@ int ReadDERFromFile(SECItem *** derlist, char *filename, int *cipher,
 	PR_Close(inFile);
 	return -1;
     }
+    bufferEnd = asc + filedata.len;
 
     /* check for headers and trailers and remove them */
     if (strstr(asc, "-----BEGIN") != NULL) {
 	int key = 0;
-	while ((asc) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
+	while ((asc) && (asc < bufferEnd) && ((body = strstr(asc, "-----BEGIN")) != NULL)) {
 	    key = 0;
 	    if ((strncmp(body, "-----BEGIN RSA PRIVATE KEY", 25) == 0) ||
 		(strncmp(body, "-----BEGIN PRIVATE KEY", 21) == 0)) {
