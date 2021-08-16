@@ -95,8 +95,8 @@ static SECStatus FileToItem(SECItem * dst, PRFileDesc * src)
 
 	if (bytesReadNow == 0) {
 	    /* EOF */
-	    dst->len = bytesReadTotal + 1;
-	    dst->data[dst->len] = '\0';
+	    dst->data[bytesReadTotal] = '\0';
+	    dst->len = bytesReadTotal;
 	    return SECSuccess;
 	}
 
