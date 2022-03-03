@@ -106,18 +106,14 @@ module.
 %setup -q
 
 %build
-mkdir build
-cd build
-%cmake ../src -B.
-%make_build
+%cmake -S src
+%cmake_build
 
 %install
-cd build
-%make_install
+%cmake_install
 
 %check
-cd build
-ctest %{?_smp_mflags} --output-on-failure
+%ctest
 
 %files
 %{_libdir}/libnsspem.so
