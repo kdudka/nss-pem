@@ -256,7 +256,7 @@ pem_mdSession_Login
     token_needsLogin[slotID - 1] = PR_FALSE;
 
     /* Find the right key object */
-    list_for_each_entry(curObj, &pem_objs, gl_list) {
+    list_for_each_entry_reverse(curObj, &pem_objs, gl_list) {
         if ((slotID == curObj->slotID) && (curObj->type == pemBareKey)) {
             io = curObj;
             break;
