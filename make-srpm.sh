@@ -60,24 +60,26 @@ test -z "`git diff HEAD`" || VER="${VER}.dirty"
 NV="${PKG}-${VER}"
 printf "\n%s: preparing a release of \033[1;32m%s\033[0m\n\n" "$SELF" "$NV"
 
-TMP="`mktemp -d`"
-trap "rm -rf '$TMP'" EXIT
-cd "$TMP" >/dev/null || die "mktemp failed"
+if [[ "$1" != "--generate-spec" ]]; then
+    TMP="`mktemp -d`"
+    trap "rm -rf '$TMP'" EXIT
+    cd "$TMP" >/dev/null || die "mktemp failed"
 
-# clone the repository
-git clone "$REPO" "$PKG"                || die "git clone failed"
-cd "$PKG"                               || die "git clone failed"
+    # clone the repository
+    git clone "$REPO" "$PKG"                || die "git clone failed"
+    cd "$PKG"                               || die "git clone failed"
 
-# run tests
-( mkdir build && cd build && cmake ../src && make -j && make -j test) \
-                                        || die "'make test' has failed"
+    # run tests
+    ( mkdir build && cd build && cmake ../src && make -j && make -j test) \
+                                            || die "'make test' has failed"
 
-SRC_TAR="${NV}.tar"
-SRC="${SRC_TAR}.xz"
-git archive --prefix="$NV/" --format="tar" HEAD -- . > "$SRC_TAR" \
-                                        || die "failed to export sources"
+    SRC_TAR="${NV}.tar"
+    SRC="${SRC_TAR}.xz"
+    git archive --prefix="$NV/" --format="tar" HEAD -- . > "$SRC_TAR" \
+                                            || die "failed to export sources"
 
-xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
+    xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
+fi
 
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF

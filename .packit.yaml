@@ -1,6 +1,21 @@
----
 specfile_path: nss-pem.spec
 downstream_package_name: nss-pem
-current_version_command: ["sh", "-c", "git describe --tags | sed -r -e \"s|nss-pem-||\" -e \"s|([^-]+)-([^-]+)-([^-]+)\\$|\\1.\\2.$(git log --pretty='%cd' --date=iso -1 | tr -d ':-' | tr ' ' . | cut -d. -f 1,2).\\3|\""]
+
+update_release: false
 actions:
-  post-upstream-clone: curl -s -o nss-pem.spec https://src.fedoraproject.org/rpms/nss-pem/raw/master/f/nss-pem.spec
+    post-upstream-clone: ./make-srpm.sh --generate-spec
+    get-current-version: "sed -n 's|^Version: *||p' nss-pem.spec"
+
+jobs:
+    - &copr
+      job: copr_build
+      trigger: pull_request
+      targets:
+          - fedora-all-aarch64
+          - fedora-all-ppc64le
+          - fedora-all-s390x
+          - fedora-all-x86_64
+
+    - <<: *copr
+      trigger: commit
+      branch: main
