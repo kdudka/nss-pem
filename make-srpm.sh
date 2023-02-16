@@ -92,7 +92,7 @@ License:    MPLv1.1
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
-BuildRequires: cmake
+BuildRequires: cmake3
 BuildRequires: gcc
 BuildRequires: make
 BuildRequires: nss-pkcs11-devel
@@ -108,14 +108,14 @@ module.
 %setup -q
 
 %build
-%cmake -S src
-%cmake_build
+%cmake3 -S src
+%cmake3_build
 
 %install
-%cmake_install
+%cmake3_install
 
 %check
-%ctest
+%ctest3
 
 %files
 %{_libdir}/libnsspem.so
