@@ -46,6 +46,7 @@
 
 #include <blapi.h>
 #include <certt.h>
+#include <nssckfwc.h>
 #include <pk11pub.h>
 #include <secasn1.h>
 
