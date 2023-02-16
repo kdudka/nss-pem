@@ -11,7 +11,7 @@ jobs:
       job: copr_build
       trigger: pull_request
       targets:
-          - fedora-all-aarch64
+          - epel-7-x86_64
           - fedora-all-ppc64le
           - fedora-all-s390x
           - fedora-all-x86_64
