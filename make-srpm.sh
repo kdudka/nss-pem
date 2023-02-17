@@ -83,6 +83,9 @@ fi
 
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF
+%undefine __cmake_in_source_build
+%undefine __cmake3_in_source_build
+
 Name:       $PKG
 Version:    $VER
 Release:    1%{?dist}
