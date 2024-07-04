@@ -91,7 +91,10 @@ Version:    $VER
 Release:    1%{?dist}
 Summary:    PEM file reader for Network Security Services (NSS)
 
-License:    MPLv1.1
+# See README for details
+# list.h - GPL-2.0-only
+# *      - MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.1-or-later
+License:    GPL-2.0-only AND (MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.1-or-later)
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
