@@ -54,7 +54,5 @@ target_link_libraries(${CMAKE_REQUIRED_LIBRARIES})
 set_target_properties(nsspem PROPERTIES LINK_FLAGS -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/nsspem.def)
 
 # install libnsspem.so
-if(NOT DEFINED LIB_INSTALL_DIR)
-  set(LIB_INSTALL_DIR lib)
-endif()
-install(TARGETS nsspem DESTINATION ${LIB_INSTALL_DIR})
+include(GNUInstallDirs)
+install(TARGETS nsspem DESTINATION ${CMAKE_INSTALL_LIBDIR})
