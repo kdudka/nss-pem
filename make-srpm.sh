@@ -91,7 +91,6 @@ fi
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF
 %undefine __cmake_in_source_build
-%undefine __cmake3_in_source_build
 
 Name:       $PKG
 Version:    $VER
@@ -105,7 +104,7 @@ License:    GPL-2.0-only AND (MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.1-or-later)
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
-BuildRequires: cmake3
+BuildRequires: cmake
 BuildRequires: gcc
 BuildRequires: make
 BuildRequires: nss-pkcs11-devel
@@ -121,14 +120,14 @@ module.
 %setup -q
 
 %build
-%cmake3 -S src
-%cmake3_build
+%cmake -S src
+%cmake_build
 
 %install
-%cmake3_install
+%cmake_install
 
 %check
-%ctest3
+%ctest
 
 %files
 %{_libdir}/libnsspem.so
