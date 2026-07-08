@@ -5,6 +5,7 @@ update_release: false
 actions:
     post-upstream-clone: ./make-srpm.sh --generate-spec
     get-current-version: "sed -n 's|^Version: *||p' nss-pem.spec"
+    post-modifications: "sed -i 's/^Requires: nss%{?_isa}$/Requires: nss%{?_isa} >= %(nss-config --version 2>\\/dev\\/null || echo 0)/' nss-pem.spec"
 
 jobs:
     - &copr

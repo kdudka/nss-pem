@@ -60,7 +60,14 @@ test -z "`git diff HEAD`" || VER="${VER}.dirty"
 NV="${PKG}-${VER}"
 printf "\n%s: preparing a release of \033[1;32m%s\033[0m\n\n" "$SELF" "$NV"
 
-if [[ "$1" != "--generate-spec" ]]; then
+NSS_REQ="Requires: nss%{?_isa} >= %(nss-config --version 2>/dev/null || echo 0)"
+if [[ "$1" == "--generate-spec" ]]; then
+    # use a simplified Requires to avoid %(nss-config ...) which breaks
+    # packit's spec parser;  the fix-spec-file action in .packit.yaml
+    # restores the full macro before rpmbuild creates the SRPM
+    NSS_REQ="Requires: nss%{?_isa}"
+else
+    # create source tarball
     TMP="`mktemp -d`"
     trap "rm -rf '$TMP'" EXIT
     cd "$TMP" >/dev/null || die "mktemp failed"
@@ -104,7 +111,7 @@ BuildRequires: make
 BuildRequires: nss-pkcs11-devel
 
 # require at least the version of nss that nss-pem was built against (#1428965)
-Requires: nss%{?_isa} >= %(nss-config --version 2>/dev/null || echo 0)
+$NSS_REQ
 
 %description
 PEM file reader for Network Security Services (NSS), implemented as a PKCS#11
