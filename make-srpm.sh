@@ -90,7 +90,11 @@ fi
 
 SPEC="./$PKG.spec"
 cat > "$SPEC" << EOF
+%if 0%{?rhel} && 0%{?rhel} <= 7
+%undefine __cmake3_in_source_build
+%else
 %undefine __cmake_in_source_build
+%endif
 
 Name:       $PKG
 Version:    $VER
@@ -104,7 +108,11 @@ License:    GPL-2.0-only AND (MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.1-or-later)
 URL:        https://github.com/kdudka/nss-pem
 Source0:    https://github.com/kdudka/nss-pem/releases/download/$NV/$SRC
 
+%if 0%{?rhel} && 0%{?rhel} <= 7
+BuildRequires: cmake3
+%else
 BuildRequires: cmake
+%endif
 BuildRequires: gcc
 BuildRequires: make
 BuildRequires: nss-pkcs11-devel
@@ -120,14 +128,27 @@ module.
 %setup -q
 
 %build
+%if 0%{?rhel} && 0%{?rhel} <= 7
+%cmake3 -S src
+%cmake3_build
+%else
 %cmake -S src
 %cmake_build
+%endif
 
 %install
+%if 0%{?rhel} && 0%{?rhel} <= 7
+%cmake3_install
+%else
 %cmake_install
+%endif
 
 %check
+%if 0%{?rhel} && 0%{?rhel} <= 7
+%ctest3
+%else
 %ctest
+%endif
 
 %files
 %{_libdir}/libnsspem.so
